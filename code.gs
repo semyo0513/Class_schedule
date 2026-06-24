@@ -1,34 +1,32 @@
 /**
- * School Timetable Manager (STM) - Google Apps Script Backend
+ * School Timetable Manager (STM) - Google Apps Script Backend (Simplified Version)
  * 
  * 이 스크립트는 구글 스프레드시트를 데이터베이스로 활용하여 시간표 데이터를 저장하고 관리합니다.
- * 웹앱 웹페이지에서 보내는 GET 및 POST 요청을 처리하여 구글 시트와 양방향으로 연동합니다.
+ * 교사정보, 교실정보, 학급정보 시트를 없애고 오직 '시간표' 시트 하나로 일정을 통합 관리합니다.
  */
 
-// 각 데이터 테이블과 구글 시트 이름 매핑
+// 각 데이터 테이블과 구글 시트 이름 매핑 (교사, 교실, 학급 시트가 제거됨)
 const SHEET_MAPPING = {
-  teachers: "교사정보",
-  rooms: "교실정보",
-  classes: "학급정보",
   timetable: "시간표",
   restrictions: "교체금지 설정",
   reservations: "특별실예약",
   swaps: "교체이력",
   substitutes: "대강이력",
-  events: "행사일정"
+  events: "행사일정",
+  schools: "학교정보",
+  users: "사용자정보"
 };
 
 // 각 시트의 기본 헤더 구성 (시트 자동 초기화용)
 const SHEET_HEADERS = {
-  "교사정보": ["교사ID", "교사명", "교과", "학년", "주당시수"],
-  "교실정보": ["교실ID", "교실명", "유형"],
-  "학급정보": ["학급ID", "학년", "반", "교실ID"],
   "시간표": ["학년", "반", "요일", "교시", "교과", "교사", "교실"],
   "교체금지 설정": ["구분", "대상", "사유", "규칙"],
   "특별실예약": ["id", "roomId", "date", "period", "teacherId", "purpose", "className"],
   "교체이력": ["id", "date", "user", "type", "details", "reason", "status", "timestamp", "meta"],
   "대강이력": ["id", "date", "absentTeacher", "period", "subTeacher", "subject", "className", "reason", "status", "timestamp", "meta"],
-  "행사일정": ["id", "name", "startDate", "endDate", "targetGrade", "description", "status"]
+  "행사일정": ["id", "name", "startDate", "endDate", "targetGrade", "description", "status"],
+  "학교정보": ["id", "name", "joinCode", "adminPassword"],
+  "사용자정보": ["username", "password", "role", "schoolId", "name"]
 };
 
 /**
@@ -116,7 +114,6 @@ function doPost(e) {
         const rows = data.map(item => {
           return headers.map(header => {
             const val = getPropertyByHeader(item, header, tableName);
-            // 객체나 배열 형태(예: meta 정보)는 JSON 문자열로 변환하여 시트에 저장
             if (typeof val === "object" && val !== null) {
               return JSON.stringify(val);
             }
@@ -191,27 +188,23 @@ function sheetToJson(sheet) {
  */
 function mapHeaderToKey(header) {
   const mapping = {
-    // 교사정보
-    "교사ID": "id",
-    "교사명": "name",
-    "교과": "subject",
-    "학년": "grade",
-    "주당시수": "weeklyHours",
-    // 교실정보
-    "교실ID": "id",
-    "교실명": "name",
-    "유형": "type",
-    // 학급정보
-    "학급ID": "id",
-    "반": "classNum",
     // 시간표
+    "학년": "grade",
+    "반": "classNum",
     "요일": "day",
     "교시": "period",
+    "교과": "subject",
+    "교사": "teacher",
+    "교실": "room",
     // 교체금지
     "구분": "type",
     "대상": "target",
     "사유": "reason",
-    "규칙": "rule"
+    "규칙": "rule",
+    // 학교정보
+    "학교명": "name",
+    "가입코드": "joinCode",
+    "관리자비밀번호": "adminPassword"
   };
   
   return mapping[header] || header;
@@ -221,10 +214,9 @@ function mapHeaderToKey(header) {
  * 시트 헤더 명칭에 맞추어 JSON 객체에서 프로퍼티 값을 추출
  */
 function getPropertyByHeader(item, header, tableName) {
-  // 공통 매핑 처리
   const key = mapHeaderToKey(header);
   
-  // 특정 시트의 요일 데이터 정수형 변환 예외 처리 (시간표의 day는 1~5 정수형 저장)
+  // 시간표의 day는 1~5 정수형 저장
   if (tableName === "timetable" && header === "요일" && typeof item[key] === "string") {
     const dayStr = item[key];
     if (dayStr.includes("월")) return 1;
