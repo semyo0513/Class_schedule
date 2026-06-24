@@ -896,21 +896,7 @@
         const [newSchoolCode, setNewSchoolCode] = useState("");
         const [newAdminPassword, setNewAdminPassword] = useState("");
 
-        // Dynamically compute teacher list from timetable so registration reflects actual staff
-        const teachersList = useMemo(() => {
-          const timetable = getLocal("timetable", DEFAULT_TIMETABLE);
-          const tNames = Array.from(new Set(timetable.map(t => t.teacher))).filter(t => t && t !== "공강");
-          if (tNames.length > 0) {
-            return tNames.map((name, i) => ({ id: `T${i}`, name, subject: "" }));
-          }
-          return DEFAULT_TEACHERS;
-        }, []);
 
-        useEffect(() => {
-          if (teachersList.length > 0) {
-            setSelectedTeacherName(teachersList[0].name);
-          }
-        }, [teachersList]);
 
         const handleLogin = (e) => {
           e.preventDefault();
@@ -1066,10 +1052,8 @@
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">교사 성함 지정</label>
-                    <select className="form-control" value={selectedTeacherName} onChange={e => setSelectedTeacherName(e.target.value)}>
-                      {teachersList.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
-                    </select>
+                    <label className="form-label">교사 성함 입력</label>
+                    <input className="form-control" type="text" placeholder="성함을 입력하세요" value={selectedTeacherName} onChange={e => setSelectedTeacherName(e.target.value)} required />
                   </div>
 
                   <div className="form-group">
