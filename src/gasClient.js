@@ -57,7 +57,6 @@ export const gasClient = {
     return Promise.resolve(settings);
   },
 
-  // Fetch all data tables
   async getAllData() {
     const settings = this.getSettings();
     if (settings.gasUrl) {
@@ -70,6 +69,8 @@ export const gasClient = {
           Object.keys(json.data).forEach(key => {
             setLocal(key, json.data[key]);
           });
+          // Merge local settings so settings is never undefined
+          json.data.settings = settings;
           return json.data;
         }
       } catch (err) {
