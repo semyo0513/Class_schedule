@@ -1,13 +1,2515 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>-</title>
+    <title>학교 통합 시간표 관리 시스템 (STM)</title>
+    
+    <!-- Google Fonts -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" />
+
+    <!-- CDN Libraries (UMD builds) -->
+    <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.23.9/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.5.28/dist/jspdf.plugin.autotable.min.js"></script>
+
+    <!-- Global CSS (Vanilla Custom Properties & Styles) -->
+    <style>
+      :root {
+        --font-sans: 'Outfit', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+        
+        --bg-app: #f4f6fa;
+        --bg-sidebar: #ffffff;
+        --bg-card: #ffffff;
+        --bg-hover: #f1f3f9;
+        --bg-input: #ffffff;
+        --border-color: #e2e8f0;
+        
+        --text-primary: #1e293b;
+        --text-secondary: #64748b;
+        --text-muted: #94a3b8;
+        
+        --primary: #4f46e5;
+        --primary-hover: #4338ca;
+        --primary-light: #e0e7ff;
+        
+        --success: #10b981;
+        --success-light: #d1fae5;
+        --warning: #f59e0b;
+        --warning-light: #fef3c7;
+        --danger: #ef4444;
+        --danger-light: #fee2e2;
+        
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        --shadow-glow: 0 0 15px rgba(79, 70, 229, 0.15);
+        
+        --radius-sm: 6px;
+        --radius-md: 12px;
+        --radius-lg: 18px;
+        --radius-full: 9999px;
+        
+        --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .dark {
+        --bg-app: #0b0f19;
+        --bg-sidebar: #111827;
+        --bg-card: #1f2937;
+        --bg-hover: #2d3748;
+        --bg-input: #1f2937;
+        --border-color: #374151;
+        
+        --text-primary: #f8fafc;
+        --text-secondary: #94a3b8;
+        --text-muted: #64748b;
+        
+        --primary: #6366f1;
+        --primary-hover: #4f46e5;
+        --primary-light: #1e1b4b;
+        
+        --success: #34d399;
+        --success-light: #064e3b;
+        --warning: #fbbf24;
+        --warning-light: #78350f;
+        --danger: #f87171;
+        --danger-light: #7f1d1d;
+        
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+        --shadow-glow: 0 0 15px rgba(99, 102, 241, 0.2);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: var(--font-sans);
+        background-color: var(--bg-app);
+        color: var(--text-primary);
+        min-height: 100vh;
+        line-height: 1.5;
+        overflow-x: hidden;
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
+
+      button, input, select, textarea {
+        font-family: inherit;
+        font-size: inherit;
+        color: inherit;
+      }
+
+      /* Custom Scrollbars */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--border-color);
+        border-radius: var(--radius-full);
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--text-muted);
+      }
+
+      /* Animations */
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes pulse-glow {
+        0%, 100% { box-shadow: 0 0 5px rgba(79, 70, 229, 0.2); }
+        50% { box-shadow: 0 0 15px rgba(79, 70, 229, 0.4); }
+      }
+      .fade-in {
+        animation: fadeIn 0.3s ease forwards;
+      }
+      .glow-active {
+        animation: pulse-glow 2s infinite ease-in-out;
+      }
+
+      /* App Grid Layout */
+      .app-container {
+        display: flex;
+        min-height: 100vh;
+        background-color: var(--bg-app);
+      }
+
+      /* Sidebar Component */
+      .sidebar {
+        width: 260px;
+        background-color: var(--bg-sidebar);
+        border-right: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        transition: var(--transition);
+      }
+      .sidebar-header {
+        padding: 24px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        border-bottom: 1px solid var(--border-color);
+      }
+      .logo-icon {
+        background: linear-gradient(135deg, var(--primary), #a78bfa);
+        color: white;
+        width: 40px;
+        height: 40px;
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        box-shadow: var(--shadow-glow);
+      }
+      .logo-text {
+        font-size: 1.15rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: var(--text-primary);
+      }
+      .logo-subtext {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        display: block;
+        font-weight: 400;
+      }
+      .sidebar-menu {
+        list-style: none;
+        padding: 16px 12px;
+        flex-grow: 1;
+        overflow-y: auto;
+      }
+      .menu-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        color: var(--text-secondary);
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        margin-bottom: 4px;
+        font-weight: 500;
+        font-size: 0.95rem;
+        transition: var(--transition);
+      }
+      .menu-item:hover {
+        background-color: var(--bg-hover);
+        color: var(--text-primary);
+        transform: translateX(4px);
+      }
+      .menu-item.active {
+        background-color: var(--primary-light);
+        color: var(--primary);
+      }
+      .sidebar-footer {
+        padding: 20px;
+        border-top: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .user-profile {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .avatar {
+        width: 36px;
+        height: 36px;
+        background-color: var(--primary);
+        color: white;
+        border-radius: var(--radius-full);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+      .profile-info {
+        display: flex;
+        flex-direction: column;
+      }
+      .profile-name {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+      .profile-role {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+      }
+      .theme-toggle {
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        padding: 8px;
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        transition: var(--transition);
+      }
+      .theme-toggle:hover {
+        background-color: var(--bg-hover);
+        color: var(--text-primary);
+      }
+
+      /* Main Viewport Content */
+      .main-content {
+        flex-grow: 1;
+        padding: 40px;
+        overflow-y: auto;
+        height: 100vh;
+      }
+      .view-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 32px;
+      }
+      .view-title h1 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+      }
+      .view-title p {
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+      }
+      .header-actions {
+        display: flex;
+        gap: 12px;
+      }
+
+      /* Common Elements */
+      .card {
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        padding: 24px;
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 24px;
+        transition: var(--transition);
+      }
+      .card:hover {
+        box-shadow: var(--shadow-md);
+      }
+      .card-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 16px;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 18px;
+        border-radius: var(--radius-md);
+        font-weight: 500;
+        font-size: 0.9rem;
+        cursor: pointer;
+        border: 1px solid transparent;
+        transition: var(--transition);
+      }
+      .btn:active { transform: scale(0.98); }
+      .btn-primary { background-color: var(--primary); color: white; }
+      .btn-primary:hover { background-color: var(--primary-hover); box-shadow: var(--shadow-glow); }
+      .btn-secondary { background-color: var(--bg-hover); color: var(--text-primary); border-color: var(--border-color); }
+      .btn-secondary:hover { background-color: var(--border-color); }
+      .btn-success { background-color: var(--success); color: white; }
+      .btn-success:hover { opacity: 0.9; }
+      .btn-danger { background-color: var(--danger); color: white; }
+      .btn-danger:hover { opacity: 0.9; }
+
+      .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+        margin-bottom: 24px;
+      }
+      .kpi-card {
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        box-shadow: var(--shadow-sm);
+      }
+      .kpi-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .kpi-icon.primary { background-color: var(--primary-light); color: var(--primary); }
+      .kpi-icon.success { background-color: var(--success-light); color: var(--success); }
+      .kpi-icon.warning { background-color: var(--warning-light); color: var(--warning); }
+      .kpi-icon.danger { background-color: var(--danger-light); color: var(--danger); }
+      .kpi-content { display: flex; flex-direction: column; }
+      .kpi-value { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); }
+      .kpi-label { font-size: 0.8rem; color: var(--text-secondary); }
+
+      .layout-split {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 24px;
+      }
+
+      /* Timetable View Grid */
+      .timetable-container { overflow-x: auto; }
+      .timetable-grid {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 16px;
+        background-color: var(--bg-card);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+      }
+      .timetable-grid th {
+        background-color: var(--bg-hover);
+        color: var(--text-secondary);
+        font-weight: 600;
+        font-size: 0.875rem;
+        padding: 12px 16px;
+        border: 1px solid var(--border-color);
+        text-align: center;
+        width: 18%;
+      }
+      .timetable-grid th:first-child { width: 10%; }
+      .timetable-grid td {
+        border: 1px solid var(--border-color);
+        padding: 12px;
+        text-align: center;
+        vertical-align: middle;
+        height: 80px;
+      }
+      .timetable-cell {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        height: 100%;
+        border-radius: var(--radius-sm);
+        padding: 6px;
+        transition: var(--transition);
+      }
+      .timetable-cell.active-lesson {
+        background-color: var(--primary-light);
+        border-left: 3px solid var(--primary);
+      }
+      .timetable-cell:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-sm);
+      }
+      .cell-subject { font-weight: 600; font-size: 0.9rem; color: var(--text-primary); }
+      .cell-sub-info {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        margin-top: 2px;
+        display: flex;
+        justify-content: center;
+        gap: 4px;
+      }
+      .cell-room {
+        background-color: var(--bg-hover);
+        padding: 1px 4px;
+        border-radius: var(--radius-sm);
+        font-size: 0.7rem;
+      }
+
+      /* Tabs Components */
+      .tabs-container {
+        display: flex;
+        gap: 8px;
+        border-bottom: 1px solid var(--border-color);
+        margin-bottom: 20px;
+        padding-bottom: 4px;
+      }
+      .tab-btn {
+        padding: 8px 16px;
+        border: none;
+        background: none;
+        font-weight: 500;
+        color: var(--text-secondary);
+        cursor: pointer;
+        border-radius: var(--radius-sm);
+        transition: var(--transition);
+      }
+      .tab-btn:hover { color: var(--text-primary); background-color: var(--bg-hover); }
+      .tab-btn.active { color: var(--primary); background-color: var(--primary-light); }
+
+      /* Form Elements */
+      .form-group { margin-bottom: 16px; }
+      .form-label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 6px;
+      }
+      .form-control {
+        width: 100%;
+        padding: 10px 14px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border-color);
+        background-color: var(--bg-input);
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        transition: var(--transition);
+      }
+      .form-control:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+      }
+      .form-row { display: flex; gap: 16px; }
+      .form-row > * { flex: 1; }
+
+      /* Custom Badges */
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 8px;
+        border-radius: var(--radius-full);
+        font-size: 0.75rem;
+        font-weight: 500;
+      }
+      .badge-primary { background-color: var(--primary-light); color: var(--primary); }
+      .badge-success { background-color: var(--success-light); color: var(--success); }
+      .badge-warning { background-color: var(--warning-light); color: var(--warning); }
+      .badge-danger { background-color: var(--danger-light); color: var(--danger); }
+      .badge-secondary { background-color: var(--bg-hover); color: var(--text-secondary); }
+
+      /* Upload drag & drop zone */
+      .upload-zone {
+        border: 2px dashed var(--border-color);
+        border-radius: var(--radius-md);
+        padding: 40px;
+        text-align: center;
+        cursor: pointer;
+        background-color: var(--bg-app);
+        transition: var(--transition);
+      }
+      .upload-zone:hover {
+        border-color: var(--primary);
+        background-color: var(--primary-light);
+      }
+      .upload-icon { color: var(--text-muted); margin-bottom: 12px; }
+
+      /* Comparison Board Layout */
+      .swap-comparison { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
+      .swap-comparison-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px;
+        background-color: var(--bg-card);
+        border-radius: var(--radius-sm);
+        border-left: 3px solid var(--text-muted);
+      }
+      .swap-comparison-row.conflict { border-left-color: var(--danger); background-color: var(--danger-light); }
+      .swap-comparison-row.success { border-left-color: var(--success); background-color: var(--success-light); }
+
+      /* Lists & Tables */
+      .data-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+      .data-table th {
+        text-align: left;
+        padding: 12px;
+        border-bottom: 2px solid var(--border-color);
+        color: var(--text-secondary);
+        font-weight: 600;
+        font-size: 0.85rem;
+      }
+      .data-table td { padding: 12px; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; }
+      .data-table tr:hover { background-color: var(--bg-hover); }
+
+      .conflict-list {
+        background-color: var(--danger-light);
+        border: 1px solid var(--danger);
+        border-radius: var(--radius-sm);
+        padding: 12px;
+        color: var(--danger);
+        margin-bottom: 16px;
+        font-size: 0.85rem;
+      }
+      .conflict-list ul { padding-left: 18px; margin-top: 6px; }
+
+      .rec-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+      .rec-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 14px;
+        background-color: var(--bg-hover);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        transition: var(--transition);
+      }
+      .rec-score {
+        font-size: 0.75rem;
+        padding: 2px 6px;
+        border-radius: var(--radius-sm);
+        background-color: var(--primary);
+        color: white;
+        font-weight: bold;
+      }
+    </style>
   </head>
   <body>
+    <!-- React Root Mount -->
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+
+    <!-- UI & Components (Babel standalone script compilation) -->
+    <script type="text/babel">
+      const { useState, useEffect, useMemo } = React;
+
+      // ==========================================
+      // SVG Icon Component (Direct Inline Render)
+      // ==========================================
+      const Icon = ({ name, size = 18, className = "" }) => {
+        const icons = {
+          layoutGrid: <path d="M3 3h7v7H3zm11 0h7v7h-7zm0 11h7v7h-7zM3 14h7v7H3z"/>,
+          calendar: <g><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></g>,
+          upload: <g><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></g>,
+          arrowLeftRight: <g><path d="m16 3 4 4-4 4M20 7H4M8 21l-4-4 4-4M4 17h16"/></g>,
+          userMinus: <g><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="22" x2="16" y1="11" y2="11"/></g>,
+          doorOpen: <g><path d="M13 4h3a2 2 0 0 1 2 2v14M2 20h20M13 20V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v16h11Z"/><circle cx="9" cy="12" r="1"/></g>,
+          calendarRange: <g><rect width="20" height="18" x="2" y="4" rx="2"/><path d="M16 2v4M8 2v4M2 10h20M17 14h-6M13 18H7"/></g>,
+          history: <g><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><polyline points="3 3 3 8 8 8"/><line x1="12" x2="12" y1="7" y2="12"/><polyline points="12 12 16 14"/></g>,
+          barChart3: <g><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/><path d="M3 3v18h18"/></g>,
+          settings: <g><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></g>,
+          sun: <g><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></g>,
+          moon: <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>,
+          school: <g><path d="M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></g>,
+          users: <g><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></g>,
+          check: <polyline points="20 6 9 17 4 12"/>,
+          search: <g><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/></g>,
+          alertCircle: <g><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></g>,
+          helpCircle: <g><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" x2="12.01" y1="17" y2="17"/></g>,
+          download: <g><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></g>,
+          fileSpreadsheet: <g><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4M8 13h8M8 17h8"/></g>,
+          fileText: <g><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4M10 9H8M16 13H8M16 17H8"/></g>,
+          checkCircle2: <g><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></g>,
+          xCircle: <g><circle cx="12" cy="12" r="10"/><line x1="15" x2="9" y1="9" y2="15"/><line x1="9" x2="15" y1="9" y2="15"/></g>,
+          plus: <g><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></g>,
+          trash2: <g><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M10 11v6M14 11v6"/></g>,
+          calendarDays: <g><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/></g>,
+          rotateCcw: <g><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><polyline points="3 3 3 8 8 8"/></g>,
+          clock: <g><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></g>,
+          info: <g><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/></g>
+        };
+
+        const path = icons[name];
+        if (!path) return null;
+
+        return (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width={size}
+            height={size}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={className}
+          >
+            {path}
+          </svg>
+        );
+      };
+
+      // ==========================================
+      // Database & Local Mock Data Setup
+      // ==========================================
+      const DEFAULT_TEACHERS = [
+        { id: "T001", name: "김국어", subject: "국어", grade: 1, weeklyHours: 16 },
+        { id: "T002", name: "이수학", subject: "수학", grade: 1, weeklyHours: 18 },
+        { id: "T003", name: "박영어", subject: "영어", grade: 1, weeklyHours: 16 },
+        { id: "T004", name: "최과학", subject: "과학", grade: 1, weeklyHours: 14 },
+        { id: "T005", name: "정사회", subject: "사회", grade: 1, weeklyHours: 12 },
+        { id: "T006", name: "강체육", subject: "체육", grade: 2, weeklyHours: 16 },
+        { id: "T007", name: "조음악", subject: "음악", grade: 2, weeklyHours: 10 },
+        { id: "T008", name: "윤미술", subject: "미술", grade: 2, weeklyHours: 10 },
+        { id: "T009", name: "한정보", subject: "정보", grade: 3, weeklyHours: 14 },
+        { id: "T010", name: "송역사", subject: "역사", grade: 3, weeklyHours: 12 },
+        { id: "T011", name: "임중국어", subject: "중국어", grade: 3, weeklyHours: 8 },
+        { id: "T012", name: "배한문", subject: "한문", grade: 3, weeklyHours: 8 }
+      ];
+
+      const DEFAULT_ROOMS = [
+        { id: "R101", name: "1학년 1반 교실", type: "classroom" },
+        { id: "R102", name: "1학년 2반 교실", type: "classroom" },
+        { id: "R103", name: "1학년 3반 교실", type: "classroom" },
+        { id: "R201", name: "2학년 1반 교실", type: "classroom" },
+        { id: "R202", name: "2학년 2반 교실", type: "classroom" },
+        { id: "R301", name: "3학년 1반 교실", type: "classroom" },
+        { id: "R302", name: "3학년 2반 교실", type: "classroom" },
+        { id: "R501", name: "과학실1", type: "special" },
+        { id: "R502", name: "과학실2", type: "special" },
+        { id: "R503", name: "컴퓨터실", type: "special" },
+        { id: "R504", name: "AI 융합실", type: "special" },
+        { id: "R505", name: "음악실", type: "special" },
+        { id: "R506", name: "미술실", type: "special" },
+        { id: "R507", name: "체육관", type: "special" },
+        { id: "R508", name: "시청각실", type: "special" }
+      ];
+
+      const DEFAULT_CLASSES = [
+        { id: "C101", grade: 1, classNum: 1, room: "R101" },
+        { id: "C102", grade: 1, classNum: 2, room: "R102" },
+        { id: "C103", grade: 1, classNum: 3, room: "R103" },
+        { id: "C201", grade: 2, classNum: 1, room: "R201" },
+        { id: "C202", grade: 2, classNum: 2, room: "R202" },
+        { id: "C301", grade: 3, classNum: 1, room: "R301" },
+        { id: "C302", grade: 3, classNum: 2, room: "R302" }
+      ];
+
+      const DEFAULT_TIMETABLE = [
+        { grade: 1, classNum: 1, day: 1, period: 1, subject: "국어", teacher: "김국어", room: "R101" },
+        { grade: 1, classNum: 1, day: 1, period: 2, subject: "수학", teacher: "이수학", room: "R101" },
+        { grade: 1, classNum: 1, day: 1, period: 3, subject: "과학", teacher: "최과학", room: "R501" },
+        { grade: 1, classNum: 1, day: 1, period: 4, subject: "체육", teacher: "강체육", room: "R507" },
+        { grade: 1, classNum: 1, day: 1, period: 5, subject: "영어", teacher: "박영어", room: "R101" },
+        { grade: 1, classNum: 1, day: 1, period: 6, subject: "사회", teacher: "정사회", room: "R101" },
+        { grade: 1, classNum: 1, day: 1, period: 7, subject: "자율", teacher: "김국어", room: "R101" },
+        { grade: 1, classNum: 1, day: 2, period: 1, subject: "수학", teacher: "이수학", room: "R101" },
+        { grade: 1, classNum: 1, day: 2, period: 2, subject: "영어", teacher: "박영어", room: "R101" },
+        { grade: 1, classNum: 1, day: 2, period: 3, subject: "국어", teacher: "김국어", room: "R101" },
+        { grade: 1, classNum: 1, day: 2, period: 4, subject: "음악", teacher: "조음악", room: "R505" },
+        { grade: 1, classNum: 1, day: 2, period: 5, subject: "과학", teacher: "최과학", room: "R101" },
+        { grade: 1, classNum: 1, day: 2, period: 6, subject: "한문", teacher: "배한문", room: "R101" },
+        { grade: 1, classNum: 1, day: 2, period: 7, subject: "창체", teacher: "이수학", room: "R101" },
+        { grade: 1, classNum: 2, day: 1, period: 1, subject: "수학", teacher: "이수학", room: "R102" },
+        { grade: 1, classNum: 2, day: 1, period: 2, subject: "국어", teacher: "김국어", room: "R102" },
+        { grade: 1, classNum: 2, day: 1, period: 3, subject: "영어", teacher: "박영어", room: "R102" },
+        { grade: 1, classNum: 2, day: 1, period: 4, subject: "사회", teacher: "정사회", room: "R102" },
+        { grade: 1, classNum: 2, day: 1, period: 5, subject: "체육", teacher: "강체육", room: "R507" },
+        { grade: 1, classNum: 2, day: 1, period: 6, subject: "과학", teacher: "최과학", room: "R102" },
+        { grade: 1, classNum: 2, day: 1, period: 7, subject: "자율", teacher: "이수학", room: "R102" }
+      ];
+
+      const DEFAULT_RESTRICTIONS = [
+        { type: "room", target: "R501", reason: "과학실1: 실험 장비 상시 준비로 타 교과 대체 불가", rule: "prevent" },
+        { type: "room", target: "R503", reason: "컴퓨터실: 실습 장비 구축으로 컴퓨터 교과 전용", rule: "prevent" },
+        { type: "teacher", target: "강체육", reason: "강체육: 외부 출강 일정에 따른 충돌 조율", rule: "warn" }
+      ];
+
+      const DEFAULT_RESERVATIONS = [
+        { id: 1, roomId: "R501", date: "2026-06-25", period: 3, teacherId: "T004", purpose: "1학년 1반 과학 물질의 구성 실험", className: "1-1" }
+      ];
+
+      const DEFAULT_SWAPS = [
+        { id: "SW001", date: "2026-06-24", user: "김국어 (관리자)", type: "1:1 교환", details: "1학년 1반 월요일 1교시(국어) ↔ 월요일 4교시(체육)", reason: "교사 출장 일정 변경", status: "승인 완료", timestamp: "2026-06-24 10:15:32" }
+      ];
+
+      const DEFAULT_SUBSTITUTES = [
+        { id: "SB001", date: "2026-06-24", absentTeacher: "최과학", period: 3, subTeacher: "이수학", subject: "수학 (보강)", className: "1-1", reason: "병가 (감기)", status: "배정 완료", timestamp: "2026-06-24 09:00:15" }
+      ];
+
+      const DEFAULT_EVENTS = [
+        { id: "EV001", name: "1학년 진로 직업 체험의 날", startDate: "2026-06-29", endDate: "2026-06-29", targetGrade: 1, description: "교외 직업 체험학습 센터 방문", status: "예정됨" }
+      ];
+
+      const DEFAULT_SETTINGS = {
+        gasUrl: "https://script.google.com/macros/s/AKfycby73Y8hCwrvSJhCnkSgJKko3hL_Xl2w-cyYOBzFq_dQCSUJvCAHofB_eoLGc6DxVueXaQ/exec",
+        discordWebhook: "",
+        googleChatWebhook: "",
+        periodsPerDay: 7,
+        schoolName: "대경고등학교",
+        adminPassword: "admin"
+      };
+
+      const getLocal = (key, defaultVal) => {
+        const val = localStorage.getItem(`stm_${key}`);
+        return val ? JSON.parse(val) : defaultVal;
+      };
+
+      const setLocal = (key, data) => {
+        localStorage.setItem(`stm_${key}`, JSON.stringify(data));
+      };
+
+      // Auto database initializer
+      const initializeDatabase = (force = false) => {
+        if (force || !localStorage.getItem("stm_initialized")) {
+          setLocal("teachers", DEFAULT_TEACHERS);
+          setLocal("rooms", DEFAULT_ROOMS);
+          setLocal("classes", DEFAULT_CLASSES);
+          setLocal("timetable", DEFAULT_TIMETABLE);
+          setLocal("restrictions", DEFAULT_RESTRICTIONS);
+          setLocal("reservations", DEFAULT_RESERVATIONS);
+          setLocal("swaps", DEFAULT_SWAPS);
+          setLocal("substitutes", DEFAULT_SUBSTITUTES);
+          setLocal("events", DEFAULT_EVENTS);
+          setLocal("settings", DEFAULT_SETTINGS);
+          localStorage.setItem("stm_initialized", "true");
+        }
+      };
+
+      initializeDatabase();
+
+      // GAS Client
+      const gasClient = {
+        getSettings() {
+          return getLocal("settings", DEFAULT_SETTINGS);
+        },
+        saveSettings(settings) {
+          setLocal("settings", settings);
+          return Promise.resolve(settings);
+        },
+        async getAllData() {
+          const settings = this.getSettings();
+          if (settings.gasUrl) {
+            try {
+              const response = await fetch(`${settings.gasUrl}?action=getAllData`);
+              if (!response.ok) throw new Error("GAS API Network Error");
+              const json = await response.json();
+              if (json.status === "success" && json.data) {
+                Object.keys(json.data).forEach(key => {
+                  setLocal(key, json.data[key]);
+                });
+                json.data.settings = settings; // settings local merge
+                return json.data;
+              }
+            } catch (err) {
+              console.error("Failed to fetch from GAS, falling back to local cache.", err);
+            }
+          }
+          return {
+            teachers: getLocal("teachers", DEFAULT_TEACHERS),
+            rooms: getLocal("rooms", DEFAULT_ROOMS),
+            classes: getLocal("classes", DEFAULT_CLASSES),
+            timetable: getLocal("timetable", DEFAULT_TIMETABLE),
+            restrictions: getLocal("restrictions", DEFAULT_RESTRICTIONS),
+            reservations: getLocal("reservations", DEFAULT_RESERVATIONS),
+            swaps: getLocal("swaps", DEFAULT_SWAPS),
+            substitutes: getLocal("substitutes", DEFAULT_SUBSTITUTES),
+            events: getLocal("events", DEFAULT_EVENTS),
+            settings: getLocal("settings", DEFAULT_SETTINGS)
+          };
+        },
+        async saveTable(tableName, data) {
+          const settings = this.getSettings();
+          setLocal(tableName, data);
+          if (settings.gasUrl) {
+            try {
+              await fetch(settings.gasUrl, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "saveTable", table: tableName, data })
+              });
+            } catch (err) {
+              console.error("Failed to push update to GAS:", err);
+            }
+          }
+          return Promise.resolve({ status: "success" });
+        },
+        resetDatabase() {
+          initializeDatabase(true);
+          return Promise.resolve(true);
+        }
+      };
+
+      // ==========================================
+      // Dashboard View Component
+      // ==========================================
+      function Dashboard({ data, setView }) {
+        const stats = useMemo(() => {
+          const todayStr = "2026-06-24";
+          return {
+            teacherCount: data.teachers.length,
+            roomCount: data.rooms.length,
+            swapCount: data.swaps.filter(s => s.date === todayStr).length,
+            subCount: data.substitutes.filter(s => s.date === todayStr).length
+          };
+        }, [data]);
+
+        const conflicts = useMemo(() => {
+          const list = [];
+          const timetable = data.timetable;
+          for (let i = 0; i < timetable.length; i++) {
+            for (let j = i + 1; j < timetable.length; j++) {
+              const itemA = timetable[i];
+              const itemB = timetable[j];
+              if (itemA.day === itemB.day && itemA.period === itemB.period) {
+                if (itemA.teacher && itemA.teacher !== "공강" && itemA.teacher === itemB.teacher) {
+                  if (itemA.grade !== itemB.grade || itemA.classNum !== itemB.classNum) {
+                    list.push({
+                      type: "teacher",
+                      description: `교사 충돌: [${itemA.teacher}] 교사가 ${getDayName(itemA.day)}요일 ${itemA.period}교시에 ${itemA.grade}-${itemA.classNum}반과 ${itemB.grade}-${itemB.classNum}반에 동시 배정됨.`
+                    });
+                  }
+                }
+                if (itemA.room && itemA.room.startsWith("R5") && itemA.room === itemB.room) {
+                  if (itemA.grade !== itemB.grade || itemA.classNum !== itemB.classNum) {
+                    const rName = data.rooms.find(r => r.id === itemA.room)?.name || itemA.room;
+                    list.push({
+                      type: "room",
+                      description: `교실 충돌: 특별실 [${rName}]이 ${getDayName(itemA.day)}요일 ${itemA.period}교시에 ${itemA.grade}-${itemA.classNum}반과 ${itemB.grade}-${itemB.classNum}반에 동시 배정됨.`
+                    });
+                  }
+                }
+              }
+            }
+          }
+          const unique = [];
+          const seen = new Set();
+          list.forEach(c => {
+            if (!seen.has(c.description)) { seen.add(c.description); unique.push(c); }
+          });
+          return unique.slice(0, 5);
+        }, [data]);
+
+        function getDayName(d) {
+          return ["", "월", "화", "수", "목", "금"][d] || "";
+        }
+
+        return (
+          <div className="fade-in">
+            <div className="dashboard-grid">
+              <div className="kpi-card">
+                <div className="kpi-icon primary"><Icon name="users" /></div>
+                <div className="kpi-content">
+                  <span className="kpi-value">{stats.teacherCount}</span>
+                  <span className="kpi-label">등록 교사 수</span>
+                </div>
+              </div>
+              <div className="kpi-card">
+                <div className="kpi-icon success"><Icon name="doorOpen" /></div>
+                <div className="kpi-content">
+                  <span className="kpi-value">{stats.roomCount}</span>
+                  <span className="kpi-label">전체 교실 수</span>
+                </div>
+              </div>
+              <div className="kpi-card">
+                <div className="kpi-icon warning"><Icon name="arrowLeftRight" /></div>
+                <div className="kpi-content">
+                  <span className="kpi-value">{stats.swapCount}</span>
+                  <span className="kpi-label">오늘의 수업교체</span>
+                </div>
+              </div>
+              <div className="kpi-card">
+                <div className="kpi-icon danger"><Icon name="userMinus" /></div>
+                <div className="kpi-content">
+                  <span className="kpi-value">{stats.subCount}</span>
+                  <span className="kpi-label">오늘의 보강배정</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="layout-split">
+              <div>
+                <div className="card">
+                  <div className="card-title text-danger">
+                    <Icon name="alertCircle" className="text-danger" />
+                    <span>실시간 시간표 충돌 검사 리포트</span>
+                  </div>
+                  {conflicts.length > 0 ? (
+                    <div className="conflict-list">
+                      <strong>주의: 시간표에 다음 충돌이 발견되었습니다.</strong>
+                      <ul>
+                        {conflicts.map((conf, idx) => (
+                          <li key={idx} style={{ marginBottom: "6px" }}>{conf.description}</li>
+                        ))}
+                      </ul>
+                      <button className="btn btn-secondary" style={{ marginTop: "12px" }} onClick={() => setView("swap")}>
+                        수업 교환 조정하기
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ padding: "20px 0", textAlign: "center", color: "var(--success)" }}>
+                      🎉 현재 시간표에 교사/특별실 중복 배정 충돌이 없습니다!
+                    </div>
+                  )}
+                </div>
+
+                <div className="card">
+                  <div className="card-title"><span>최근 변경 이력</span></div>
+                  {data.swaps.length === 0 && data.substitutes.length === 0 ? (
+                    <p style={{ textAlign: "center", padding: "20px", color: "var(--text-secondary)" }}>이력이 없습니다.</p>
+                  ) : (
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>날짜</th>
+                          <th>유형</th>
+                          <th>내용</th>
+                          <th>상태</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.swaps.slice(0, 2).map((sw, i) => (
+                          <tr key={`sw-${i}`}>
+                            <td>{sw.date}</td>
+                            <td><span className="badge badge-primary">수업교환</span></td>
+                            <td>{sw.details} ({sw.reason})</td>
+                            <td><span className="badge badge-success">{sw.status}</span></td>
+                          </tr>
+                        ))}
+                        {data.substitutes.slice(0, 2).map((sb, i) => (
+                          <tr key={`sb-${i}`}>
+                            <td>{sb.date}</td>
+                            <td><span className="badge badge-danger">보강배정</span></td>
+                            <td>{sb.className}반 {sb.period}교시: {sb.absentTeacher} → {sb.subTeacher}</td>
+                            <td><span className="badge badge-success">{sb.status}</span></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <div className="card">
+                  <div className="card-title"><span>빠른 작업 바로가기</span></div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                    <button className="btn btn-primary" onClick={() => setView("viewer")} style={{ justifyContent: "center" }}>시간표 조회</button>
+                    <button className="btn btn-secondary" onClick={() => setView("swap")} style={{ justifyContent: "center" }}>1:1 수업 교체</button>
+                    <button className="btn btn-secondary" onClick={() => setView("substitute")} style={{ justifyContent: "center" }}>보강 교사 배정</button>
+                    <button className="btn btn-secondary" onClick={() => setView("upload")} style={{ justifyContent: "center" }}>엑셀 파일 업로드</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // ==========================================
+      // Timetable Viewer Component
+      // ==========================================
+      function TimetableViewer({ data }) {
+        const [tab, setTab] = useState("class");
+        const [selectedGrade, setSelectedGrade] = useState(1);
+        const [selectedClass, setSelectedClass] = useState(1);
+        const [selectedTeacher, setSelectedTeacher] = useState(data.teachers[0]?.name || "");
+        const [selectedRoom, setSelectedRoom] = useState(data.rooms[0]?.id || "");
+        const [selectedDay, setSelectedDay] = useState(1);
+        const [selectedPeriod, setSelectedPeriod] = useState(1);
+
+        const DAYS = ["월", "화", "수", "목", "금"];
+        const PERIODS = [1, 2, 3, 4, 5, 6, 7];
+
+        const grades = useMemo(() => Array.from(new Set(data.classes.map(c => c.grade))).sort(), [data]);
+        const classesInGrade = useMemo(() => {
+          return data.classes.filter(c => c.grade === selectedGrade).map(c => c.classNum).sort((a,b)=>a-b);
+        }, [data, selectedGrade]);
+
+        useEffect(() => {
+          if (classesInGrade.length > 0 && !classesInGrade.includes(selectedClass)) {
+            setSelectedClass(classesInGrade[0]);
+          }
+        }, [classesInGrade, selectedClass]);
+
+        const gridData = useMemo(() => {
+          const matrix = Array(7).fill(null).map(() => Array(5).fill(null));
+          data.timetable.forEach(item => {
+            let match = false;
+            let displaySubInfo = "";
+            if (tab === "class" && item.grade === selectedGrade && item.classNum === selectedClass) {
+              match = true;
+              displaySubInfo = item.teacher;
+            } else if (tab === "teacher" && item.teacher === selectedTeacher) {
+              match = true;
+              displaySubInfo = `${item.grade}-${item.classNum}`;
+            } else if (tab === "room" && item.room === selectedRoom) {
+              match = true;
+              displaySubInfo = `${item.grade}-${item.classNum} (${item.teacher})`;
+            }
+            if (match) {
+              const dIdx = item.day - 1;
+              const pIdx = item.period - 1;
+              if (dIdx >= 0 && dIdx < 5 && pIdx >= 0 && pIdx < 7) {
+                matrix[pIdx][dIdx] = { subject: item.subject, info: displaySubInfo, room: item.room };
+              }
+            }
+          });
+          return matrix;
+        }, [data, tab, selectedGrade, selectedClass, selectedTeacher, selectedRoom]);
+
+        const periodData = useMemo(() => {
+          if (tab !== "period") return [];
+          return data.classes.map(cls => {
+            const lesson = data.timetable.find(t => t.grade === cls.grade && t.classNum === cls.classNum && t.day === selectedDay && t.period === selectedPeriod);
+            const rObj = data.rooms.find(r => r.id === (lesson?.room || cls.room));
+            return {
+              className: `${cls.grade}학년 ${cls.classNum}반`,
+              subject: lesson?.subject || "공강",
+              teacher: lesson?.teacher || "-",
+              roomName: rObj ? rObj.name : "-"
+            };
+          });
+        }, [data, tab, selectedDay, selectedPeriod]);
+
+        const handleExportExcel = () => {
+          let rows = [];
+          if (tab !== "period") {
+            rows.push(["교시", ...DAYS.map(d => `${d}요일`)]);
+            PERIODS.forEach(p => {
+              const row = [`${p}교시`];
+              DAYS.forEach((d, dIdx) => {
+                const cell = gridData[p-1][dIdx];
+                row.push(cell ? `${cell.subject}(${cell.info})` : "");
+              });
+              rows.push(row);
+            });
+          } else {
+            rows.push(["학급", "과목", "담당교사", "수업교실"]);
+            periodData.forEach(r => rows.push([r.className, r.subject, r.teacher, r.roomName]));
+          }
+          const wb = XLSX.utils.book_new();
+          const ws = XLSX.utils.aoa_to_sheet(rows);
+          XLSX.utils.book_append_sheet(wb, ws, "시간표");
+          XLSX.writeFile(wb, "시간표_내보내기.xlsx");
+        };
+
+        const handleExportPDF = () => {
+          const { jsPDF } = window.jspdf;
+          const doc = new jsPDF();
+          doc.text("School Timetable", 14, 15);
+          let head = [["Period", "Mon", "Tue", "Wed", "Thu", "Fri"]];
+          let body = [];
+          if (tab !== "period") {
+            PERIODS.forEach(p => {
+              const row = [`Period ${p}`];
+              DAYS.forEach((d, dIdx) => {
+                const cell = gridData[p-1][dIdx];
+                row.push(cell ? `${cell.subject} (${cell.info})` : "-");
+              });
+              body.push(row);
+            });
+          } else {
+            head = [["Class", "Subject", "Teacher", "Room"]];
+            periodData.forEach(r => body.push([r.className, r.subject, r.teacher, r.roomName]));
+          }
+          doc.autoTable({ startY: 20, head, body });
+          doc.save("timetable.pdf");
+        };
+
+        return (
+          <div className="fade-in">
+            <div className="view-header">
+              <div className="view-title">
+                <h1>통합 시간표 조회</h1>
+                <p>학급, 교사, 교실 및 교시를 바탕으로 학교 전체의 실시간 배치 일정을 한눈에 파악합니다.</p>
+              </div>
+              <div className="header-actions">
+                <button className="btn btn-secondary" onClick={handleExportExcel}><Icon name="fileSpreadsheet" />Excel 내보내기</button>
+                <button className="btn btn-secondary" onClick={handleExportPDF}><Icon name="fileText" />PDF 출력</button>
+              </div>
+            </div>
+
+            <div className="tabs-container">
+              <button className={`tab-btn ${tab === "class" ? "active" : ""}`} onClick={() => setTab("class")}>학급별</button>
+              <button className={`tab-btn ${tab === "teacher" ? "active" : ""}`} onClick={() => setTab("teacher")}>교사별</button>
+              <button className={`tab-btn ${tab === "room" ? "active" : ""}`} onClick={() => setTab("room")}>교실/특별실별</button>
+              <button className={`tab-btn ${tab === "period" ? "active" : ""}`} onClick={() => setTab("period")}>교시별 전체</button>
+            </div>
+
+            <div className="card">
+              <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", marginBottom: "20px", alignItems: "center" }}>
+                {tab === "class" && (
+                  <>
+                    <select className="form-control" style={{ width: "120px" }} value={selectedGrade} onChange={e => setSelectedGrade(Number(e.target.value))}>
+                      {grades.map(g => <option key={g} value={g}>{g}학년</option>)}
+                    </select>
+                    <select className="form-control" style={{ width: "120px" }} value={selectedClass} onChange={e => setSelectedClass(Number(e.target.value))}>
+                      {classesInGrade.map(c => <option key={c} value={c}>{c}반</option>)}
+                    </select>
+                  </>
+                )}
+                {tab === "teacher" && (
+                  <select className="form-control" style={{ width: "200px" }} value={selectedTeacher} onChange={e => setSelectedTeacher(e.target.value)}>
+                    {data.teachers.map(t => <option key={t.id} value={t.name}>{t.name} ({t.subject})</option>)}
+                  </select>
+                )}
+                {tab === "room" && (
+                  <select className="form-control" style={{ width: "220px" }} value={selectedRoom} onChange={e => setSelectedRoom(e.target.value)}>
+                    {data.rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                  </select>
+                )}
+                {tab === "period" && (
+                  <>
+                    <select className="form-control" style={{ width: "120px" }} value={selectedDay} onChange={e => setSelectedDay(Number(e.target.value))}>
+                      <option value={1}>월요일</option><option value={2}>화요일</option><option value={3}>수요일</option><option value={4}>목요일</option><option value={5}>금요일</option>
+                    </select>
+                    <select className="form-control" style={{ width: "120px" }} value={selectedPeriod} onChange={e => setSelectedPeriod(Number(e.target.value))}>
+                      {PERIODS.map(p => <option key={p} value={p}>{p}교시</option>)}
+                    </select>
+                  </>
+                )}
+              </div>
+
+              {tab !== "period" ? (
+                <div className="timetable-container">
+                  <table className="timetable-grid">
+                    <thead>
+                      <tr>
+                        <th>교시</th><th>월</th><th>화</th><th>수</th><th>목</th><th>금</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {PERIODS.map(p => (
+                        <tr key={p}>
+                          <td style={{ fontWeight: 600, backgroundColor: "var(--bg-hover)", color: "var(--text-secondary)" }}>{p}교시</td>
+                          {DAYS.map((d, dIdx) => {
+                            const cell = gridData[p-1][dIdx];
+                            return (
+                              <td key={dIdx}>
+                                {cell ? (
+                                  <div className="timetable-cell active-lesson">
+                                    <span className="cell-subject">{cell.subject}</span>
+                                    <span className="cell-sub-info">
+                                      <span>{cell.info}</span>
+                                      {tab !== "room" && <span className="cell-room">{data.rooms.find(r => r.id === cell.room)?.name.replace(" 교실","") || cell.room}</span>}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span style={{ color: "var(--text-muted)", opacity: 0.4 }}>공강</span>
+                                )}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <table className="data-table">
+                  <thead>
+                    <tr><th>학급</th><th>수업</th><th>교사</th><th>교실</th></tr>
+                  </thead>
+                  <tbody>
+                    {periodData.map((row, idx) => (
+                      <tr key={idx}>
+                        <td style={{ fontWeight: 600 }}>{row.className}</td>
+                        <td><span className={`badge ${row.subject === "공강" ? "badge-secondary" : "badge-primary"}`}>{row.subject}</span></td>
+                        <td>{row.teacher}</td>
+                        <td>{row.roomName}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        );
+      }
+
+      // ==========================================
+      // Timetable Upload Component
+      // ==========================================
+      function TimetableUpload({ data, updateData }) {
+        const [file, setFile] = useState(null);
+        const [report, setReport] = useState(null);
+
+        const handleFileChange = (e) => {
+          if (e.target.files && e.target.files[0]) {
+            const uploadedFile = e.target.files[0];
+            setFile(uploadedFile);
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+              try {
+                const ab = evt.target.result;
+                const wb = XLSX.read(ab, { type: "array" });
+                const parsed = parseExcel(wb);
+                validateAndReport(parsed);
+              } catch (err) {
+                setReport({ status: "error", errors: ["엑셀 분석 실패. 올바른 파일 규격인지 검토바랍니다."] });
+              }
+            };
+            reader.readAsArrayBuffer(uploadedFile);
+          }
+        };
+
+        const parseExcel = (wb) => {
+          const readSheet = (n) => XLSX.utils.sheet_to_json(wb.Sheets[n] || {});
+          
+          const teachers = (readSheet("교사정보") || readSheet("Sheet1")).map((r, i) => ({
+            id: r["교사ID"] || `T${String(i+1).padStart(3,"0")}`,
+            name: r["교사명"],
+            subject: r["교과"],
+            grade: Number(r["학년"]) || 1,
+            weeklyHours: Number(r["주당시수"]) || 16
+          })).filter(t => t.name);
+
+          const rooms = (readSheet("교실정보") || readSheet("Sheet2")).map((r, i) => ({
+            id: r["교실ID"] || `R${String(i+1).padStart(3,"0")}`,
+            name: r["교실명"],
+            type: r["유형"] || "classroom"
+          })).filter(rm => rm.name);
+
+          const classes = (readSheet("학급정보") || readSheet("Sheet3")).map(r => ({
+            id: r["학급ID"] || `C${r["학년"]}${r["반"]}`,
+            grade: Number(r["학년"]),
+            classNum: Number(r["반"]),
+            room: r["교실ID"]
+          })).filter(c => c.grade);
+
+          const timetable = (readSheet("시간표") || readSheet("Sheet4")).map(r => {
+            const dayStr = r["요일"];
+            let day = 1;
+            if (dayStr.includes("월")) day = 1;
+            else if (dayStr.includes("화")) day = 2;
+            else if (dayStr.includes("수")) day = 3;
+            else if (dayStr.includes("목")) day = 4;
+            else if (dayStr.includes("금")) day = 5;
+            
+            const foundRoom = rooms.find(rm => rm.name === r["교실"] || rm.id === r["교실"]);
+            const resolvedRoom = foundRoom ? foundRoom.id : "";
+
+            return {
+              grade: Number(r["학년"]),
+              classNum: Number(r["반"]),
+              day,
+              period: Number(r["교시"]),
+              subject: r["교과"],
+              teacher: r["교사"],
+              room: resolvedRoom
+            };
+          }).filter(t => t.grade && t.classNum && t.period);
+
+          const restrictions = (readSheet("교체금지 설정") || readSheet("Sheet5")).map(r => ({
+            type: r["구분"] === "교실" ? "room" : "teacher",
+            target: r["대상"],
+            reason: r["사유"],
+            rule: "prevent"
+          })).filter(res => res.target);
+
+          return { teachers, rooms, classes, timetable, restrictions };
+        };
+
+        const validateAndReport = (parsed) => {
+          const errors = [];
+          const warnings = [];
+          if (parsed.teachers.length === 0) errors.push("교사 데이터 누락");
+          if (parsed.timetable.length === 0) errors.push("시간표 데이터 누락");
+
+          // Double booking validator
+          const teacherMap = {};
+          const roomMap = {};
+          parsed.timetable.forEach(item => {
+            if (item.teacher && item.teacher !== "공강") {
+              const tKey = `${item.teacher}-${item.day}-${item.period}`;
+              if (!teacherMap[tKey]) teacherMap[tKey] = [];
+              teacherMap[tKey].push(`${item.grade}-${item.classNum}`);
+            }
+            if (item.room) {
+              const rKey = `${item.room}-${item.day}-${item.period}`;
+              if (!roomMap[rKey]) roomMap[rKey] = [];
+              roomMap[rKey].push(`${item.grade}-${item.classNum}`);
+            }
+          });
+
+          Object.keys(teacherMap).forEach(k => {
+            if (teacherMap[k].length > 1) {
+              const [tName, day, per] = k.split("-");
+              errors.push(`교사 중복 수업: [${tName}] 교사가 ${["","월","화","수","목","금"][day]}요일 ${per}교시에 ${teacherMap[k].join(", ")}반에 동시 배정됨.`);
+            }
+          });
+
+          Object.keys(roomMap).forEach(k => {
+            const [rId] = k.split("-");
+            const rObj = parsed.rooms.find(rm => rm.id === rId);
+            if (rObj && rObj.type === "special" && roomMap[k].length > 1) {
+              const [, day, per] = k.split("-");
+              errors.push(`특별실 중복 예약: [${rObj.name}]이 ${["","월","화","수","목","금"][day]}요일 ${per}교시에 ${roomMap[k].join(", ")}반에 동시 사용 설정됨.`);
+            }
+          });
+
+          setReport({
+            status: errors.length === 0 ? "success" : "invalid",
+            errors,
+            warnings,
+            data: parsed
+          });
+        };
+
+        const handleApply = () => {
+          if (report && report.status === "success") {
+            updateData(report.data);
+            alert("엑셀 시간표 데이터가 반영되었습니다.");
+            setFile(null);
+            setReport(null);
+          }
+        };
+
+        const handleDownloadTemplate = () => {
+          const wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([
+            { "교사ID": "T001", "교사명": "김국어", "교과": "국어", "학년": 1, "주당시수": 16 }
+          ]), "교사정보");
+          XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([
+            { "교실ID": "R101", "교실명": "1학년 1반 교실", "유형": "classroom" },
+            { "교실ID": "R501", "교실명": "과학실1", "유형": "special" }
+          ]), "교실정보");
+          XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([
+            { "학급ID": "C101", "학년": 1, "반": 1, "교실ID": "R101" }
+          ]), "학급정보");
+          XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([
+            { "학년": 1, "반": 1, "요일": "월", "교시": 1, "교과": "국어", "교사": "김국어", "교실": "R101" }
+          ]), "시간표");
+          XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([
+            { "구분": "특별실", "대상": "과학실1", "사유": "실험 준비 셋팅 불가" }
+          ]), "교체금지 설정");
+          
+          XLSX.writeFile(wb, "시간표_업로드_양식.xlsx");
+        };
+
+        return (
+          <div className="fade-in">
+            <div className="view-header">
+              <div className="view-title">
+                <h1>시간표 일괄 등록 (Excel)</h1>
+                <p>제공되는 규격 시트 양식에 맞춰 작성된 시간표 엑셀 파일을 업로드하여 학교 전체 일정을 재배치합니다.</p>
+              </div>
+              <button className="btn btn-secondary" onClick={handleDownloadTemplate}><Icon name="download" />양식 다운로드</button>
+            </div>
+
+            <div className="layout-split">
+              <div>
+                <div className="card">
+                  <div className="upload-zone" onClick={() => document.getElementById("file-input").click()}>
+                    <input id="file-input" type="file" style={{ display: "none" }} accept=".xlsx" onChange={handleFileChange} />
+                    <Icon name="upload" size={48} className="upload-icon" style={{ margin: "0 auto 12px" }} />
+                    <h3>시간표 엑셀 파일 업로드</h3>
+                    <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginTop: "4px" }}>이곳을 클릭하여 시간표 파일을 드래그하거나 선택하세요.</p>
+                    {file && <div style={{ marginTop: "16px", fontWeight: "600", color: "var(--primary)" }}>선택된 파일: {file.name}</div>}
+                  </div>
+                </div>
+
+                {report && report.status === "success" && (
+                  <div className="card" style={{ borderLeft: "4px solid var(--success)" }}>
+                    <div className="card-title text-success"><Icon name="checkCircle2" className="text-success" /><span>검증 완료</span></div>
+                    <p style={{ fontSize: "0.9rem", marginBottom: "16px" }}>충돌 검사 결과, 시간표 무결성이 확인되었습니다. 반영하려면 아래 버튼을 클릭하세요.</p>
+                    <button className="btn btn-primary" onClick={handleApply}>데이터 저장소 최종 반영</button>
+                  </div>
+                )}
+
+                {report && report.status === "invalid" && (
+                  <div className="card" style={{ borderLeft: "4px solid var(--danger)" }}>
+                    <div className="card-title text-danger"><Icon name="xCircle" className="text-danger" /><span>검증 실패 (충돌 발견)</span></div>
+                    <div className="conflict-list" style={{ marginTop: "12px" }}>
+                      <ul>{report.errors.map((e, idx) => <li key={idx}>{e}</li>)}</ul>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <div className="card">
+                  <div className="card-title"><span>업로드 필수 규칙</span></div>
+                  <ul style={{ paddingLeft: "18px", fontSize: "0.8rem", color: "var(--text-secondary)", display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <li><strong>교사정보</strong>, <strong>교실정보</strong>, <strong>학급정보</strong>, <strong>시간표</strong>, <strong>교체금지 설정</strong> 총 5개 기본 시트명이 필요합니다.</li>
+                    <li>모든 교사 및 교실 명칭은 시간표상의 텍스트와 정확하게 매치되어야 자동 배정 중복 필터링이 작동합니다.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // ==========================================
+      // Swap Manager Component
+      // ==========================================
+      function SwapManager({ data, updateTableAndLogSwap }) {
+        const [gradeA, setGradeA] = useState(1);
+        const [classA, setClassA] = useState(1);
+        const [dayA, setDayA] = useState(1);
+        const [periodA, setPeriodA] = useState(1);
+
+        const [gradeB, setGradeB] = useState(1);
+        const [classB, setClassB] = useState(1);
+        const [dayB, setDayB] = useState(1);
+        const [periodB, setPeriodB] = useState(2);
+
+        const [reason, setReason] = useState("");
+
+        const DAYS = ["월", "화", "수", "목", "금"];
+        const PERIODS = [1, 2, 3, 4, 5, 6, 7];
+
+        const grades = useMemo(() => Array.from(new Set(data.classes.map(c => c.grade))).sort(), [data]);
+        
+        const classesInGradeA = useMemo(() => data.classes.filter(c => c.grade === gradeA).map(c => c.classNum).sort((a,b)=>a-b), [data, gradeA]);
+        const classesInGradeB = useMemo(() => data.classes.filter(c => c.grade === gradeB).map(c => c.classNum).sort((a,b)=>a-b), [data, gradeB]);
+
+        useEffect(() => { if (classesInGradeA.length > 0 && !classesInGradeA.includes(classA)) setClassA(classesInGradeA[0]); }, [classesInGradeA, classA]);
+        useEffect(() => { if (classesInGradeB.length > 0 && !classesInGradeB.includes(classB)) setClassB(classesInGradeB[0]); }, [classesInGradeB, classB]);
+
+        const lessonA = useMemo(() => {
+          return data.timetable.find(t => t.grade === gradeA && t.classNum === classA && t.day === dayA && t.period === periodA) ||
+                 { grade: gradeA, classNum: classA, day: dayA, period: periodA, subject: "공강", teacher: "", room: "" };
+        }, [data, gradeA, classA, dayA, periodA]);
+
+        const lessonB = useMemo(() => {
+          return data.timetable.find(t => t.grade === gradeB && t.classNum === classB && t.day === dayB && t.period === periodB) ||
+                 { grade: gradeB, classNum: classB, day: dayB, period: periodB, subject: "공강", teacher: "", room: "" };
+        }, [data, gradeB, classB, dayB, periodB]);
+
+        const simulation = useMemo(() => {
+          const alerts = [];
+          if (gradeA === gradeB && classA === classB && dayA === dayB && periodA === periodB) {
+            alerts.push("동일한 시간표 위치를 교환할 수 없습니다.");
+            return { alerts, canSwap: false };
+          }
+          // Teacher A collision
+          if (lessonA.teacher && lessonA.teacher !== "공강") {
+            const coll = data.timetable.find(t => t.teacher === lessonA.teacher && t.day === dayB && t.period === periodB && !(t.grade === gradeA && t.classNum === classA) && !(t.grade === gradeB && t.classNum === classB));
+            if (coll) alerts.push(`교사 충돌: [${lessonA.teacher}] 교사가 교환 대상 교시(${DAYS[dayB-1]}요일 ${periodB}교시)에 ${coll.grade}-${coll.classNum}반 수업이 잡혀 있습니다.`);
+          }
+          // Teacher B collision
+          if (lessonB.teacher && lessonB.teacher !== "공강") {
+            const coll = data.timetable.find(t => t.teacher === lessonB.teacher && t.day === dayA && t.period === periodA && !(t.grade === gradeB && t.classNum === classB) && !(t.grade === gradeA && t.classNum === classA));
+            if (coll) alerts.push(`교사 충돌: [${lessonB.teacher}] 교사가 교환 대상 교시(${DAYS[dayA-1]}요일 ${periodA}교시)에 ${coll.grade}-${coll.classNum}반 수업이 잡혀 있습니다.`);
+          }
+          // Special room collision
+          if (lessonA.room && lessonA.room.startsWith("R5")) {
+            const coll = data.timetable.find(t => t.room === lessonA.room && t.day === dayB && t.period === periodB && !(t.grade === gradeA && t.classNum === classA) && !(t.grade === gradeB && t.classNum === classB));
+            if (coll) alerts.push(`교실 충돌: 특별실 [${data.rooms.find(r=>r.id===lessonA.room)?.name}]이 해당 시간에 사용 중입니다.`);
+          }
+          if (lessonB.room && lessonB.room.startsWith("R5")) {
+            const coll = data.timetable.find(t => t.room === lessonB.room && t.day === dayA && t.period === periodA && !(t.grade === gradeB && t.classNum === classB) && !(t.grade === gradeA && t.classNum === classA));
+            if (coll) alerts.push(`교실 충돌: 특별실 [${data.rooms.find(r=>r.id===lessonB.room)?.name}]이 해당 시간에 사용 중입니다.`);
+          }
+          // Policy check
+          const policies = data.restrictions || [];
+          policies.forEach(res => {
+            if (res.rule === "prevent") {
+              if (res.type === "teacher" && (lessonA.teacher === res.target || lessonB.teacher === res.target)) {
+                alerts.push(`교체 불가 대상: 교사 [${res.target}]의 수업 교환이 차단되어 있습니다. 사유: ${res.reason}`);
+              }
+              if (res.type === "room" && (lessonA.room === res.target || lessonB.room === res.target)) {
+                alerts.push(`교체 불가 대상: 특별실 [${data.rooms.find(r=>r.id===res.target)?.name}]의 수업 교환이 차단되어 있습니다. 사유: ${res.reason}`);
+              }
+            }
+          });
+
+          return { alerts, canSwap: alerts.length === 0 };
+        }, [data, gradeA, classA, dayA, periodA, gradeB, classB, dayB, periodB, lessonA, lessonB]);
+
+        const handleSwap = () => {
+          if (!simulation.canSwap || !reason.trim()) return;
+          const details = `${gradeA}-${classA}반 ${DAYS[dayA-1]}요일 ${periodA}교시(${lessonA.subject}) ↔ ${gradeB}-${classB}반 ${DAYS[dayB-1]}요일 ${periodB}교시(${lessonB.subject})`;
+          
+          updateTableAndLogSwap({
+            gradeA, classA, dayA, periodA,
+            gradeB, classB, dayB, periodB,
+            lessonA, lessonB
+          }, reason, details);
+          
+          alert("수업 교체 배정이 확정되었습니다.");
+          setReason("");
+        };
+
+        return (
+          <div className="fade-in">
+            <div className="view-header">
+              <div className="view-title">
+                <h1>1:1 수업 교환</h1>
+                <p>두 수업의 일정을 직접 교환하며, 교사의 요일/교시별 연달아 편성 및 특별실 가용 여부를 실시간 시뮬레이션 검증합니다.</p>
+              </div>
+            </div>
+
+            <div className="layout-split">
+              <div>
+                <div className="card">
+                  <div className="card-title"><Icon name="arrowLeftRight" /><span>수업 교환 세부 대상 지정</span></div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                    
+                    <div style={{ background: "var(--bg-hover)", padding: "16px", borderRadius: "8px" }}>
+                      <h4 style={{ marginBottom: "10px", display: "flex", justifyContent: "space-between" }}>
+                        <span>수업 대상 A</span>
+                        <span className="badge badge-primary">{gradeA}학년 {classA}반</span>
+                      </h4>
+                      <div className="form-row">
+                        <div>
+                          <label className="form-label">학반 지정</label>
+                          <div style={{ display: "flex", gap: "6px" }}>
+                            <select className="form-control" value={gradeA} onChange={e => setGradeA(Number(e.target.value))}>
+                              {grades.map(g => <option key={g} value={g}>{g}학년</option>)}
+                            </select>
+                            <select className="form-control" value={classA} onChange={e => setClassA(Number(e.target.value))}>
+                              {classesInGradeA.map(c => <option key={c} value={c}>{c}반</option>)}
+                            </select>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="form-label">시간 지정</label>
+                          <div style={{ display: "flex", gap: "6px" }}>
+                            <select className="form-control" value={dayA} onChange={e => setDayA(Number(e.target.value))}>
+                              <option value={1}>월요일</option><option value={2}>화요일</option><option value={3}>수요일</option><option value={4}>목요일</option><option value={5}>금요일</option>
+                            </select>
+                            <select className="form-control" value={periodA} onChange={e => setPeriodA(Number(e.target.value))}>
+                              {PERIODS.map(p => <option key={p} value={p}>{p}교시</option>)}
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ marginTop: "10px", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+                        현재 지정: <strong>{lessonA.subject}</strong> ({lessonA.teacher || "공강"})
+                      </div>
+                    </div>
+
+                    <div style={{ background: "var(--bg-hover)", padding: "16px", borderRadius: "8px" }}>
+                      <h4 style={{ marginBottom: "10px", display: "flex", justifyContent: "space-between" }}>
+                        <span>수업 대상 B</span>
+                        <span className="badge badge-primary">{gradeB}학년 {classB}반</span>
+                      </h4>
+                      <div className="form-row">
+                        <div>
+                          <label className="form-label">학반 지정</label>
+                          <div style={{ display: "flex", gap: "6px" }}>
+                            <select className="form-control" value={gradeB} onChange={e => setGradeB(Number(e.target.value))}>
+                              {grades.map(g => <option key={g} value={g}>{g}학년</option>)}
+                            </select>
+                            <select className="form-control" value={classB} onChange={e => setClassB(Number(e.target.value))}>
+                              {classesInGradeB.map(c => <option key={c} value={c}>{c}반</option>)}
+                            </select>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="form-label">시간 지정</label>
+                          <div style={{ display: "flex", gap: "6px" }}>
+                            <select className="form-control" value={dayB} onChange={e => setDayB(Number(e.target.value))}>
+                              <option value={1}>월요일</option><option value={2}>화요일</option><option value={3}>수요일</option><option value={4}>목요일</option><option value={5}>금요일</option>
+                            </select>
+                            <select className="form-control" value={periodB} onChange={e => setPeriodB(Number(e.target.value))}>
+                              {PERIODS.map(p => <option key={p} value={p}>{p}교시</option>)}
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ marginTop: "10px", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+                        현재 지정: <strong>{lessonB.subject}</strong> ({lessonB.teacher || "공강"})
+                      </div>
+                    </div>
+
+                  </div>
+
+                  <div className="form-group" style={{ marginTop: "16px" }}>
+                    <label className="form-label">수업 교체 사유</label>
+                    <input className="form-control" type="text" placeholder="사유를 입력해 주세요..." value={reason} onChange={e => setReason(e.target.value)} />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <div className="card">
+                  <div className="card-title"><span>교환 결과 시뮬레이션</span></div>
+                  <div className="swap-comparison">
+                    <div style={{ fontWeight: 600, fontSize: "0.8rem" }}>[교환 전]</div>
+                    <div className="swap-comparison-row">
+                      <span>A: {lessonA.subject}</span><span>B: {lessonB.subject}</span>
+                    </div>
+                    <div style={{ fontWeight: 600, fontSize: "0.8rem", marginTop: "10px" }}>[교환 후 미리보기]</div>
+                    <div className="swap-comparison-row success">
+                      <span>A 위치: {lessonB.subject}</span><span>B 위치: {lessonA.subject}</span>
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: "20px" }}>
+                    {simulation.alerts.length > 0 ? (
+                      <div className="conflict-list" style={{ margin: 0 }}>
+                        <strong>교체 불가 충돌 검출:</strong>
+                        <ul style={{ paddingLeft: "16px", marginTop: "4px" }}>
+                          {simulation.alerts.map((al, idx) => <li key={idx}>{al}</li>)}
+                        </ul>
+                      </div>
+                    ) : (
+                      <div style={{ background: "var(--success-light)", color: "var(--success)", border: "1px solid var(--success)", padding: "12px", borderRadius: "6px" }}>
+                        ✅ 교체 시 중복 충돌이 검출되지 않았습니다.
+                      </div>
+                    )}
+                  </div>
+
+                  <button className="btn btn-primary" style={{ width: "100%", marginTop: "16px", justifyContent: "center" }} disabled={!simulation.canSwap || !reason.trim()} onClick={handleSwap}>
+                    수업 교차 교환 확정
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // ==========================================
+      // Substitute Manager Component
+      // ==========================================
+      function SubstituteManager({ data, addSubstituteAssignment }) {
+        const [absentId, setAbsentId] = useState(data.teachers[0]?.id || "");
+        const [date, setDate] = useState("2026-06-25");
+        const [period, setPeriod] = useState(1);
+        const [reason, setReason] = useState("");
+        const [selectedSub, setSelectedSub] = useState(null);
+
+        const absentTeacher = useMemo(() => data.teachers.find(t => t.id === absentId), [data, absentId]);
+        const dayIdx = useMemo(() => {
+          const day = new Date(date).getDay();
+          return (day === 0 || day === 6) ? 1 : day;
+        }, [date]);
+
+        const affected = useMemo(() => {
+          if (!absentTeacher) return null;
+          return data.timetable.find(t => t.teacher === absentTeacher.name && t.day === dayIdx && t.period === period);
+        }, [data, absentTeacher, dayIdx, period]);
+
+        const recommendations = useMemo(() => {
+          if (!absentTeacher) return [];
+          const list = [];
+          data.teachers.forEach(t => {
+            if (t.id === absentTeacher.id) return;
+            const isBusy = data.timetable.some(item => item.teacher === t.name && item.day === dayIdx && item.period === period);
+            const isSubbed = data.substitutes.some(s => s.subTeacher === t.name && s.date === date && s.period === period);
+            if (isBusy || isSubbed) return;
+
+            let score = 0;
+            const badges = [];
+            if (t.subject === absentTeacher.subject) { score += 50; badges.push("교과 일치"); }
+            if (t.grade === absentTeacher.grade) { score += 25; badges.push("학년 일치"); }
+            const counts = data.substitutes.filter(s => s.subTeacher === t.name).length;
+            score -= counts * 10;
+            badges.push(`대강 ${counts}회`);
+
+            list.push({ teacher: t, score, badges });
+          });
+          return list.sort((a,b) => b.score - a.score);
+        }, [data, absentTeacher, dayIdx, period, date]);
+
+        useEffect(() => {
+          if (recommendations.length > 0) setSelectedSub(recommendations[0].teacher.name);
+          else setSelectedSub(null);
+        }, [recommendations]);
+
+        const handleAssign = () => {
+          if (!selectedSub || !reason.trim()) return;
+          const className = affected ? `${affected.grade}-${affected.classNum}` : "공강";
+          const subject = affected ? `${affected.subject} (보강)` : "자율 (보강)";
+
+          addSubstituteAssignment({
+            date, absentTeacher: absentTeacher.name, period, subTeacher: selectedSub, subject, className, reason
+          });
+          alert("보강 교사가 배정되었습니다.");
+          setReason("");
+        };
+
+        return (
+          <div className="fade-in">
+            <div className="view-header">
+              <div className="view-title">
+                <h1>결강 & 보강 관리</h1>
+                <p>교사의 출장/휴가/병가로 인한 수업 공백 발생 시 공강인 교사를 추출하여 매칭 우선순위를 제공합니다.</p>
+              </div>
+            </div>
+
+            <div className="layout-split">
+              <div>
+                <div className="card">
+                  <div className="card-title"><Icon name="userMinus" /><span>부재 결강 조건 설정</span></div>
+                  
+                  <div className="form-group">
+                    <label className="form-label">부재 교사</label>
+                    <select className="form-control" value={absentId} onChange={e => setAbsentId(e.target.value)}>
+                      {data.teachers.map(t => <option key={t.id} value={t.id}>{t.name} ({t.subject})</option>)}
+                    </select>
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label className="form-label">부재 날짜</label>
+                      <input className="form-control" type="date" value={date} onChange={e => setDate(e.target.value)} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">대상 교시</label>
+                      <select className="form-control" value={period} onChange={e => setPeriod(Number(e.target.value))}>
+                        {[1,2,3,4,5,6,7].map(p => <option key={p} value={p}>{p}교시</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">보강/결강 사유</label>
+                    <input className="form-control" type="text" placeholder="예) 출장, 병가 등" value={reason} onChange={e => setReason(e.target.value)} />
+                  </div>
+
+                  {affected ? (
+                    <div style={{ marginTop: "16px", padding: "12px", background: "var(--bg-hover)", borderRadius: "6px", borderLeft: "3px solid var(--primary)", fontSize: "0.85rem" }}>
+                      대상 학급: <strong>{affected.grade}학년 {affected.classNum}반</strong> | 수업 과목: <strong>{affected.subject}</strong>
+                    </div>
+                  ) : (
+                    <div style={{ marginTop: "16px", padding: "12px", background: "var(--bg-hover)", borderRadius: "6px", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+                      해당 교시는 공강 상태이므로 보강을 배정할 필요가 없습니다.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <div className="card">
+                  <div className="card-title"><span>보강 교사 추천 순위</span></div>
+                  {!affected ? (
+                    <p style={{ textAlign: "center", padding: "20px", color: "var(--text-secondary)" }}>배정 수업이 있는 경우 추천 목록이 뜹니다.</p>
+                  ) : recommendations.length === 0 ? (
+                    <div className="conflict-list">사용 가능한 공강 교사가 없습니다.</div>
+                  ) : (
+                    <div>
+                      <div className="rec-list">
+                        {recommendations.slice(0, 4).map(rec => (
+                          <div
+                            key={rec.teacher.id}
+                            className="rec-item"
+                            style={{
+                              borderColor: selectedSub === rec.teacher.name ? "var(--primary)" : "",
+                              backgroundColor: selectedSub === rec.teacher.name ? "var(--primary-light)" : ""
+                            }}
+                            onClick={() => setSelectedSub(rec.teacher.name)}
+                          >
+                            <div>
+                              <div style={{ fontWeight: 600 }}>{rec.teacher.name} ({rec.teacher.subject})</div>
+                              <div style={{ display: "flex", gap: "4px", marginTop: "4px" }}>
+                                {rec.badges.map((b, idx) => <span key={idx} className="badge badge-secondary">{b}</span>)}
+                              </div>
+                            </div>
+                            <span className="rec-score">+{rec.score}점</span>
+                          </div>
+                        ))}
+                      </div>
+                      <button className="btn btn-primary" style={{ width: "100%", marginTop: "16px", justifyContent: "center" }} disabled={!selectedSub || !reason.trim()} onClick={handleAssign}>
+                        보강 교사 배정 확정
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // ==========================================
+      // Room Reservation Component
+      // ==========================================
+      function RoomReservation({ data, addReservation }) {
+        const [roomId, setRoomId] = useState(data.rooms.find(r => r.type === "special")?.id || "");
+        const [date, setDate] = useState("2026-06-25");
+        const [teacherId, setTeacherId] = useState(data.teachers[0]?.id || "");
+        const [period, setPeriod] = useState(1);
+        const [purpose, setPurpose] = useState("");
+        const [className, setClassName] = useState("1-1");
+
+        const specialRooms = useMemo(() => data.rooms.filter(r => r.type === "special"), [data]);
+        const dayIdx = useMemo(() => {
+          const d = new Date(date).getDay();
+          return (d === 0 || d === 6) ? 1 : d;
+        }, [date]);
+
+        const timeline = useMemo(() => {
+          return [1,2,3,4,5,6,7].map(p => {
+            const res = data.reservations.find(r => r.roomId === roomId && r.date === date && r.period === p);
+            if (res) {
+              const tObj = data.teachers.find(t => t.id === res.teacherId);
+              return { period: p, status: "reserved", label: `예약: [${res.className}] ${res.purpose} (${tObj ? tObj.name : ""})` };
+            }
+            const reg = data.timetable.find(t => t.room === roomId && t.day === dayIdx && t.period === p);
+            if (reg) {
+              return { period: p, status: "regular", label: `정규: [${reg.grade}-${reg.classNum}반] ${reg.subject} (${reg.teacher})` };
+            }
+            return { period: p, status: "free", label: "공실 (예약 가능)" };
+          });
+        }, [data, roomId, date, dayIdx]);
+
+        const isBookable = useMemo(() => {
+          const slot = timeline.find(s => s.period === period);
+          return slot ? slot.status === "free" : false;
+        }, [timeline, period]);
+
+        const handleBook = () => {
+          if (!isBookable || !purpose.trim()) return;
+          addReservation({ roomId, date, period, teacherId, purpose, className });
+          alert("특별실 예약이 정상 완료되었습니다.");
+          setPurpose("");
+        };
+
+        return (
+          <div className="fade-in">
+            <div className="view-header">
+              <div className="view-title">
+                <h1>특별실 사용 예약</h1>
+                <p>과학실, 컴퓨터실, 체육관 등 주요 교내 특별학습 공간의 정규 수업 제외 유휴 시간대를 파악해 신규 예약합니다.</p>
+              </div>
+            </div>
+
+            <div className="layout-split">
+              <div>
+                <div className="card">
+                  <div className="card-title"><Icon name="calendar" /><span>이용 공간 및 일정 조회</span></div>
+                  <div style={{ display: "flex", gap: "16px", marginBottom: "16px" }}>
+                    <select className="form-control" value={roomId} onChange={e => setRoomId(e.target.value)}>
+                      {specialRooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                    </select>
+                    <input className="form-control" type="date" value={date} onChange={e => setDate(e.target.value)} />
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {timeline.map(slot => (
+                      <div key={slot.period} style={{ display: "flex", border: "1px solid var(--border-color)", borderRadius: "6px", overflow: "hidden" }}>
+                        <div style={{ padding: "12px", background: "var(--bg-hover)", fontWeight: 700, width: "60px", textAlign: "center" }}>{slot.period}교시</div>
+                        <div style={{ padding: "12px", flexGrow: 1, display: "flex", alignItems: "center", gap: "8px" }}>
+                          <span className={`badge ${slot.status === "reserved" ? "badge-warning" : slot.status === "regular" ? "badge-primary" : "badge-success"}`}>
+                            {slot.status === "reserved" ? "예약됨" : slot.status === "regular" ? "수업중" : "공실"}
+                          </span>
+                          <span style={{ fontSize: "0.9rem" }}>{slot.label}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <div className="card">
+                  <div className="card-title"><Icon name="doorOpen" /><span>신규 예약 신청</span></div>
+                  <div className="form-group">
+                    <label className="form-label">예약자(교사)</label>
+                    <select className="form-control" value={teacherId} onChange={e => setTeacherId(e.target.value)}>
+                      {data.teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    </select>
+                  </div>
+                  
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label className="form-label">교시 선택</label>
+                      <select className="form-control" value={period} onChange={e => setPeriod(Number(e.target.value))}>
+                        {[1,2,3,4,5,6,7].map(p => <option key={p} value={p}>{p}교시</option>)}
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">신청 대상 학급</label>
+                      <input className="form-control" type="text" value={className} onChange={e => setClassName(e.target.value)} />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">사용 목적</label>
+                    <input className="form-control" type="text" placeholder="예) 물리 낙하 실험 실습" value={purpose} onChange={e => setPurpose(e.target.value)} />
+                  </div>
+
+                  {!isBookable && <div className="conflict-list">해당 시간대는 수업 중이거나 이미 예약이 차있습니다.</div>}
+
+                  <button className="btn btn-primary" style={{ width: "100%", justifyContent: "center" }} disabled={!isBookable || !purpose.trim()} onClick={handleBook}>
+                    이용 예약 신청 확정
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // ==========================================
+      // Event Manager Component
+      // ==========================================
+      function EventManager({ data, addEvent, deleteEvent }) {
+        const [name, setName] = useState("");
+        const [startDate, setStartDate] = useState("2026-06-29");
+        const [endDate, setEndDate] = useState("2026-06-29");
+        const [targetGrade, setTargetGrade] = useState(0);
+        const [description, setDescription] = useState("");
+
+        const handleSubmit = (e) => {
+          e.preventDefault();
+          if (!name.trim()) return;
+          addEvent({ name, startDate, endDate, targetGrade, description, status: "예정됨" });
+          alert("새 학사 일정이 등록되었습니다.");
+          setName("");
+          setDescription("");
+        };
+
+        return (
+          <div className="fade-in">
+            <div className="view-header">
+              <div className="view-title">
+                <h1>학사 행사 일정 설정</h1>
+                <p>소풍, 수련회, 시험 등 학년 단위 특별 일정을 등록하고 관리합니다.</p>
+              </div>
+            </div>
+
+            <div className="layout-split">
+              <div>
+                <div className="card">
+                  <div className="card-title"><Icon name="calendarRange" /><span>등록된 학사 행사 목록</span></div>
+                  {data.events.length === 0 ? (
+                    <p style={{ textAlign: "center", padding: "30px", color: "var(--text-secondary)" }}>등록된 행사가 없습니다.</p>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      {data.events.map(ev => (
+                        <div key={ev.id} style={{ border: "1px solid var(--border-color)", padding: "14px", borderRadius: "6px", background: "var(--bg-hover)", position: "relative" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between" }}>
+                            <strong>{ev.name}</strong>
+                            <button className="btn btn-secondary btn-sm" style={{ color: "var(--danger)", padding: "2px 6px" }} onClick={() => deleteEvent(ev.id)}><Icon name="trash2" size={14} /></button>
+                          </div>
+                          <span className="badge badge-primary" style={{ marginTop: "4px" }}>
+                            {ev.targetGrade === 0 ? "전체 학년" : `${ev.targetGrade}학년 대상`}
+                          </span>
+                          <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", marginTop: "6px" }}>{ev.description}</p>
+                          <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "4px" }}>기간: {ev.startDate} ~ {ev.endDate}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <div className="card">
+                  <div className="card-title"><Icon name="plus" /><span>신규 행사 등록</span></div>
+                  <form onSubmit={handleSubmit}>
+                    <div className="form-group">
+                      <label className="form-label">행사명</label>
+                      <input className="form-control" type="text" placeholder="예) 지필 평가, 체육대회" value={name} onChange={e => setName(e.target.value)} required />
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label className="form-label">시작일</label>
+                        <input className="form-control" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} required />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">종료일</label>
+                        <input className="form-control" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} required />
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">대상 학년</label>
+                      <select className="form-control" value={targetGrade} onChange={e => setTargetGrade(Number(e.target.value))}>
+                        <option value={0}>전체 학년</option><option value={1}>1학년</option><option value={2}>2학년</option><option value={3}>3학년</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">설명</label>
+                      <textarea className="form-control" style={{ height: "60px", resize: "none" }} value={description} onChange={e => setDescription(e.target.value)} />
+                    </div>
+                    <button className="btn btn-primary" type="submit" style={{ width: "100%", justifyContent: "center" }}>행사 등록 저장</button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // ==========================================
+      // Audit Log Component
+      // ==========================================
+      function AuditLog({ data, restoreSwap, restoreSubstitute }) {
+        const [filterType, setFilterType] = useState("all");
+        const [search, setSearch] = useState("");
+
+        const filteredSwaps = data.swaps.filter(sw => {
+          if (filterType === "substitute") return false;
+          return sw.details.toLowerCase().includes(search.toLowerCase()) || sw.reason.toLowerCase().includes(search.toLowerCase());
+        });
+
+        const filteredSubs = data.substitutes.filter(sb => {
+          if (filterType === "swap") return false;
+          return sb.absentTeacher.toLowerCase().includes(search.toLowerCase()) || sb.subTeacher.toLowerCase().includes(search.toLowerCase());
+        });
+
+        const logs = [
+          ...filteredSwaps.map(sw => ({ ...sw, logType: "swap", key: `sw-${sw.id}`, sortTime: new Date(sw.date).getTime() })),
+          ...filteredSubs.map(sb => ({ ...sb, logType: "substitute", key: `sb-${sb.id}`, sortTime: new Date(sb.date).getTime() }))
+        ].sort((a,b) => b.sortTime - a.sortTime);
+
+        return (
+          <div className="fade-in">
+            <div className="view-header">
+              <div className="view-title">
+                <h1>변경 이력 및 시간표 복구</h1>
+                <p>일정 스왑 및 보강 배정에 대한 과거 조정 이력 로그를 확인하고, 복구 버튼으로 손쉽게 이전 상태로 되돌립니다.</p>
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="card-title"><Icon name="history" /><span>시간표 히스토리 로그</span></div>
+              
+              <div style={{ display: "flex", gap: "16px", marginBottom: "16px", alignItems: "center" }}>
+                <div style={{ display: "flex", border: "1px solid var(--border-color)", borderRadius: "6px", overflow: "hidden" }}>
+                  <button className="tab-btn" style={{ borderRadius: 0 }} onClick={() => setFilterType("all")}>전체</button>
+                  <button className="tab-btn" style={{ borderRadius: 0 }} onClick={() => setFilterType("swap")}>수업교환</button>
+                  <button className="tab-btn" style={{ borderRadius: 0 }} onClick={() => setFilterType("substitute")}>결강대강</button>
+                </div>
+                <input className="form-control" style={{ flexGrow: 1 }} type="text" placeholder="교사명, 세부 내용 등으로 필터링..." value={search} onChange={e => setSearch(e.target.value)} />
+              </div>
+
+              {logs.length === 0 ? (
+                <p style={{ textAlign: "center", padding: "30px", color: "var(--text-secondary)" }}>표시할 이력이 없습니다.</p>
+              ) : (
+                <table className="data-table">
+                  <thead>
+                    <tr><th>발생일</th><th>구분</th><th>세부 내용</th><th>사유</th><th>상태</th><th>작업</th></tr>
+                  </thead>
+                  <tbody>
+                    {logs.map(log => (
+                      <tr key={log.key}>
+                        <td>{log.date}</td>
+                        <td><span className={`badge ${log.logType === "swap" ? "badge-primary" : "badge-danger"}`}>{log.logType === "swap" ? "교환" : "대강"}</span></td>
+                        <td>{log.logType === "swap" ? log.details : `${log.className}반 ${log.period}교시: ${log.absentTeacher} → ${log.subTeacher}`}</td>
+                        <td>{log.reason}</td>
+                        <td><span className="badge badge-secondary">{log.status}</span></td>
+                        <td>
+                          {log.status !== "복구완료" && log.status !== "취소됨" && (
+                            <button className="btn btn-secondary btn-sm" onClick={() => {
+                              if (confirm("정말 이 변경을 되돌리시겠습니까?")) {
+                                if (log.logType === "swap") restoreSwap(log.id);
+                                else restoreSubstitute(log.id);
+                              }
+                            }}><Icon name="rotateCcw" size={14} />복원</button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        );
+      }
+
+      // ==========================================
+      // Stats Dashboard Component
+      // ==========================================
+      function StatsDashboard({ data }) {
+        const teacherStats = useMemo(() => {
+          return data.teachers.map(teacher => {
+            const hours = data.timetable.filter(t => t.teacher === teacher.name).length;
+            return { ...teacher, actualHours: hours };
+          }).sort((a,b)=>b.actualHours - a.actualHours);
+        }, [data]);
+
+        const roomStats = useMemo(() => {
+          return data.rooms.filter(r => r.type === "special").map(room => {
+            const uses = data.timetable.filter(t => t.room === room.id).length + data.reservations.filter(r => r.roomId === room.id).length;
+            return { ...room, totalUse: uses, rate: Math.min(Math.round((uses/35)*100), 100) };
+          }).sort((a,b)=>b.rate - a.rate);
+        }, [data]);
+
+        return (
+          <div className="fade-in">
+            <div className="view-header">
+              <div className="view-title">
+                <h1>시수 및 가동률 분석</h1>
+                <p>각 교사들의 주당 보강/정규 시수 부하 및 실시간 특별학습실 가동 통계를 확인합니다.</p>
+              </div>
+            </div>
+
+            <div className="layout-split">
+              <div>
+                <div className="card">
+                  <div className="card-title"><Icon name="clock" /><span>교사별 주간 배치 시수</span></div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                    {teacherStats.map(t => (
+                      <div key={t.id}>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", marginBottom: "4px" }}>
+                          <span>{t.name} ({t.subject})</span>
+                          <span><strong>{t.actualHours}시수</strong> / {t.weeklyHours}시수 기준</span>
+                        </div>
+                        <div style={{ width: "100%", height: "6px", background: "var(--bg-hover)", borderRadius: "99px", overflow: "hidden" }}>
+                          <div style={{ width: `${Math.min((t.actualHours / t.weeklyHours)*100, 100)}%`, height: "100%", background: "var(--primary)", borderRadius: "99px" }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <div className="card">
+                  <div className="card-title"><Icon name="barChart3" /><span>특별실 사용 통계</span></div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                    {roomStats.map(r => (
+                      <div key={r.id}>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", marginBottom: "4px" }}>
+                          <span>{r.name}</span>
+                          <span>이용률 <strong>{r.rate}%</strong> ({r.totalUse}교시/주)</span>
+                        </div>
+                        <div style={{ width: "100%", height: "6px", background: "var(--bg-hover)", borderRadius: "99px", overflow: "hidden" }}>
+                          <div style={{ width: `${r.rate}%`, height: "100%", background: r.rate > 50 ? "var(--danger)" : "var(--success)", borderRadius: "99px" }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // ==========================================
+      // Settings Component
+      // ==========================================
+      function Settings({ settings, saveSettings, resetDatabase, theme, toggleTheme }) {
+        const [gasUrl, setGasUrl] = useState(settings.gasUrl || "");
+        const [schoolName, setSchoolName] = useState(settings.schoolName || "대경고등학교");
+
+        const handleSubmit = (e) => {
+          e.preventDefault();
+          saveSettings({ ...settings, gasUrl, schoolName });
+          alert("환경 변수 세팅이 성공적으로 저장되었습니다.");
+        };
+
+        const handleReset = () => {
+          if (confirm("경고: 저장된 교사/시간표 변경점을 초기화하고 공장 초기 샘플 데이터로 리셋하시겠습니까?")) {
+            resetDatabase();
+            alert("로컬 DB 초기화 완료. 페이지가 리로드됩니다.");
+            window.location.reload();
+          }
+        };
+
+        return (
+          <div className="fade-in">
+            <div className="view-header">
+              <div className="view-title">
+                <h1>시스템 환경 설정</h1>
+                <p>구글 스프레드시트 GAS Web App URL 연계 동기화 설정 및 로컬 데이터베이스를 관리합니다.</p>
+              </div>
+            </div>
+
+            <div className="layout-split">
+              <div>
+                <div className="card">
+                  <div className="card-title"><Icon name="settings" /><span>시스템 운영 세부 설정</span></div>
+                  <form onSubmit={handleSubmit}>
+                    <div className="form-group">
+                      <label className="form-label">운영 학교명</label>
+                      <input className="form-control" type="text" value={schoolName} onChange={e => setSchoolName(e.target.value)} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">구글 Apps Script 웹앱 배포 URL</label>
+                      <input className="form-control" type="text" placeholder="https://script.google.com/macros/s/.../exec" value={gasUrl} onChange={e => setGasUrl(e.target.value)} />
+                    </div>
+                    <button className="btn btn-primary" type="submit" style={{ width: "100%", justifyContent: "center" }}>설정 저장</button>
+                  </form>
+                </div>
+              </div>
+
+              <div>
+                <div className="card">
+                  <div className="card-title"><span>데이터/테마 관리</span></div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span>다크 테마 전환</span>
+                      <button className="theme-toggle" onClick={toggleTheme}>
+                        <Icon name={theme === "dark" ? "sun" : "moon"} size={20} />
+                      </button>
+                    </div>
+                    <div style={{ borderTop: "1px solid var(--border-color)", paddingTop: "14px" }}>
+                      <label className="form-label">안전 지대 초기화</label>
+                      <button className="btn btn-danger" style={{ width: "100%", justifyContent: "center" }} onClick={handleReset}>DB 초기화 및 복구</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="card">
+                  <div className="card-title"><Icon name="info" /><span>구글 스프레드시트 API 연동 순서</span></div>
+                  <ol style={{ paddingLeft: "16px", fontSize: "0.75rem", color: "var(--text-secondary)", display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <li>구글 시트를 만들고 스프레드시트 Apps Script 창을 엽니다.</li>
+                    <li>이 저장소 내 <strong>`code.gs`</strong> 파일의 소스 코드를 복사해서 붙여넣습니다.</li>
+                    <li><strong>[배포] > [새 배포]</strong> 선택 후 유형을 <strong>[웹앱]</strong>으로 설정합니다.</li>
+                    <li>액세스 권한을 <strong>[모든 사용자(Anyone)]</strong>로 지정하고 배포 완료합니다.</li>
+                    <li>발급된 주소를 우측 설정란의 <strong>Apps Script 웹앱 배포 URL</strong>에 등록하세요!</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // ==========================================
+      // Root App Component
+      // ==========================================
+      function App() {
+        const [view, setView] = useState("dashboard");
+        const [theme, setTheme] = useState(localStorage.getItem("stm_theme") || "light");
+        const [loading, setLoading] = useState(true);
+
+        const [db, setDb] = useState({
+          teachers: [], rooms: [], classes: [], timetable: [],
+          restrictions: [], reservations: [], swaps: [], substitutes: [], events: [], settings: {}
+        });
+
+        useEffect(() => {
+          async function loadData() {
+            try {
+              const fetched = await gasClient.getAllData();
+              setDb(fetched);
+            } catch (err) {
+              console.error("Failed to load initial dataset", err);
+            } finally {
+              setLoading(false);
+            }
+          }
+          loadData();
+        }, []);
+
+        useEffect(() => {
+          const root = document.documentElement;
+          if (theme === "dark") root.classList.add("dark");
+          else root.classList.remove("dark");
+          localStorage.setItem("stm_theme", theme);
+        }, [theme]);
+
+        const toggleTheme = () => setTheme(prev => prev === "dark" ? "light" : "dark");
+
+        const syncTable = async (tableName, tableData) => {
+          setDb(prev => ({ ...prev, [tableName]: tableData }));
+          await gasClient.saveTable(tableName, tableData);
+        };
+
+        const updateTableAndLogSwap = async (swapDetails, reason, detailsText) => {
+          const { gradeA, classA, dayA, periodA, gradeB, classB, dayB, periodB, lessonA, lessonB } = swapDetails;
+          const updatedTimetable = [...db.timetable];
+
+          const indexA = updatedTimetable.findIndex(t => t.grade === gradeA && t.classNum === classA && t.day === dayA && t.period === periodA);
+          const indexB = updatedTimetable.findIndex(t => t.grade === gradeB && t.classNum === classB && t.day === dayB && t.period === periodB);
+
+          const targetA = { subject: lessonB.subject === "공강" ? "" : lessonB.subject, teacher: lessonB.teacher, room: lessonB.room };
+          const targetB = { subject: lessonA.subject === "공강" ? "" : lessonA.subject, teacher: lessonA.teacher, room: lessonA.room };
+
+          if (indexA !== -1) updatedTimetable[indexA] = { ...updatedTimetable[indexA], ...targetA };
+          else if (lessonB.subject !== "공강") updatedTimetable.push({ grade: gradeA, classNum: classA, day: dayA, period: periodA, ...targetA });
+
+          if (indexB !== -1) updatedTimetable[indexB] = { ...updatedTimetable[indexB], ...targetB };
+          else if (lessonA.subject !== "공강") updatedTimetable.push({ grade: gradeB, classNum: classB, day: dayB, period: periodB, ...targetB });
+
+          const newLog = {
+            id: `SW${String(db.swaps.length + 1).padStart(3, "0")}`,
+            date: new Date().toISOString().split("T")[0],
+            user: "교무부 관리자",
+            type: "1:1 교환",
+            details: detailsText,
+            reason,
+            status: "승인 완료",
+            timestamp: new Date().toLocaleString(),
+            meta: {
+              gradeA, classA, dayA, periodA, originalTeacherA: lessonA.teacher, originalSubjectA: lessonA.subject, originalRoomA: lessonA.room,
+              gradeB, classB, dayB, periodB, originalTeacherB: lessonB.teacher, originalSubjectB: lessonB.subject, originalRoomB: lessonB.room
+            }
+          };
+
+          await syncTable("timetable", updatedTimetable);
+          await syncTable("swaps", [newLog, ...db.swaps]);
+        };
+
+        const restoreSwap = async (swapId) => {
+          const idx = db.swaps.findIndex(s => s.id === swapId);
+          if (idx === -1) return;
+          const log = db.swaps[idx];
+          if (!log.meta) return;
+
+          const { gradeA, classA, dayA, periodA, originalTeacherA, originalSubjectA, originalRoomA,
+                  gradeB, classB, dayB, periodB, originalTeacherB, originalSubjectB, originalRoomB } = log.meta;
+
+          const updatedTimetable = [...db.timetable];
+
+          const indexA = updatedTimetable.findIndex(t => t.grade === gradeA && t.classNum === classA && t.day === dayA && t.period === periodA);
+          if (indexA !== -1) {
+            updatedTimetable[indexA] = { ...updatedTimetable[indexA], subject: originalSubjectA === "공강" ? "" : originalSubjectA, teacher: originalTeacherA, room: originalRoomA };
+          }
+
+          const indexB = updatedTimetable.findIndex(t => t.grade === gradeB && t.classNum === classB && t.day === dayB && t.period === periodB);
+          if (indexB !== -1) {
+            updatedTimetable[indexB] = { ...updatedTimetable[indexB], subject: originalSubjectB === "공강" ? "" : originalSubjectB, teacher: originalTeacherB, room: originalRoomB };
+          }
+
+          const updatedSwaps = [...db.swaps];
+          updatedSwaps[idx] = { ...log, status: "복구완료" };
+
+          await syncTable("timetable", updatedTimetable);
+          await syncTable("swaps", updatedSwaps);
+        };
+
+        const addSubstituteAssignment = async (assignment) => {
+          const updatedTimetable = [...db.timetable];
+          const [gStr, cStr] = assignment.className.split("-");
+          const grade = Number(gStr);
+          const classNum = Number(cStr);
+
+          const index = updatedTimetable.findIndex(t => t.grade === grade && t.classNum === classNum && t.day === new Date(assignment.date).getDay() && t.period === assignment.period);
+
+          let originalTeacher = "";
+          let originalSubject = "";
+
+          if (index !== -1) {
+            originalTeacher = updatedTimetable[index].teacher;
+            originalSubject = updatedTimetable[index].subject;
+
+            updatedTimetable[index] = {
+              ...updatedTimetable[index],
+              teacher: assignment.subTeacher,
+              subject: `${assignment.subject.split(" ")[0]} (보강)`
+            };
+          }
+
+          const newLog = {
+            id: `SB${String(db.substitutes.length + 1).padStart(3, "0")}`,
+            ...assignment,
+            status: "배정 완료",
+            timestamp: new Date().toLocaleString(),
+            meta: { grade, classNum, day: new Date(assignment.date).getDay(), period: assignment.period, originalTeacher, originalSubject }
+          };
+
+          await syncTable("timetable", updatedTimetable);
+          await syncTable("substitutes", [newLog, ...db.substitutes]);
+        };
+
+        const restoreSubstitute = async (subId) => {
+          const idx = db.substitutes.findIndex(s => s.id === subId);
+          if (idx === -1) return;
+          const log = db.substitutes[idx];
+          if (!log.meta) return;
+
+          const { grade, classNum, day, period, originalTeacher, originalSubject } = log.meta;
+          const updatedTimetable = [...db.timetable];
+          const index = updatedTimetable.findIndex(t => t.grade === grade && t.classNum === classNum && t.day === day && t.period === period);
+
+          if (index !== -1) {
+            updatedTimetable[index] = { ...updatedTimetable[index], teacher: originalTeacher, subject: originalSubject };
+          }
+
+          const updatedSubs = [...db.substitutes];
+          updatedSubs[idx] = { ...log, status: "취소됨" };
+
+          await syncTable("timetable", updatedTimetable);
+          await syncTable("substitutes", updatedSubs);
+        };
+
+        const addReservation = async (res) => {
+          const updatedRes = [...db.reservations, { id: db.reservations.length + 1, ...res }];
+          await syncTable("reservations", updatedRes);
+        };
+
+        const addEvent = async (ev) => {
+          const updatedEvents = [...db.events, { id: `EV${db.events.length + 1}`, ...ev }];
+          await syncTable("events", updatedEvents);
+        };
+
+        const deleteEvent = async (evId) => {
+          const updatedEvents = db.events.filter(e => e.id !== evId);
+          await syncTable("events", updatedEvents);
+        };
+
+        const saveSettings = async (newSettings) => {
+          await gasClient.saveSettings(newSettings);
+          setDb(prev => ({ ...prev, settings: newSettings }));
+        };
+
+        const updateData = async (newData) => {
+          setDb(prev => ({ ...prev, ...newData }));
+          await gasClient.saveTable("teachers", newData.teachers);
+          await gasClient.saveTable("rooms", newData.rooms);
+          await syncTable("classes", newData.classes);
+          await syncTable("timetable", newData.timetable);
+          await syncTable("restrictions", newData.restrictions);
+        };
+
+        const resetDatabase = async () => {
+          await gasClient.resetDatabase();
+        };
+
+        if (loading) {
+          return (
+            <div style={{ display: "flex", height: "100vh", alignItems: "center", justifyContent: "center", flexDirection: "column", backgroundColor: "var(--bg-app)", color: "var(--text-primary)" }}>
+              <Icon name="school" size={64} className="glow-active" style={{ color: "var(--primary)", marginBottom: "20px" }} />
+              <h2>시간표 관리 시스템 초기 데이터 로딩 중...</h2>
+            </div>
+          );
+        }
+
+        const schoolName = db.settings?.schoolName || "학교";
+
+        return (
+          <div className="app-container">
+            <aside className="sidebar">
+              <div className="sidebar-header">
+                <div className="logo-icon">S</div>
+                <div>
+                  <span className="logo-text">{schoolName}</span>
+                  <span className="logo-subtext">시간표 통합 관리</span>
+                </div>
+              </div>
+              <ul className="sidebar-menu">
+                <li className={`menu-item ${view === "dashboard" ? "active" : ""}`} onClick={() => setView("dashboard")}><Icon name="layoutGrid" /><span>종합 대시보드</span></li>
+                <li className={`menu-item ${view === "viewer" ? "active" : ""}`} onClick={() => setView("viewer")}><Icon name="calendar" /><span>시간표 통합 조회</span></li>
+                <li className={`menu-item ${view === "upload" ? "active" : ""}`} onClick={() => setView("upload")}><Icon name="upload" /><span>엑셀 일괄 등록</span></li>
+                <li className={`menu-item ${view === "swap" ? "active" : ""}`} onClick={() => setView("swap")}><Icon name="arrowLeftRight" /><span>1:1 수업 교체</span></li>
+                <li className={`menu-item ${view === "substitute" ? "active" : ""}`} onClick={() => setView("substitute")}><Icon name="userMinus" /><span>결강 & 보강 관리</span></li>
+                <li className={`menu-item ${view === "reservation" ? "active" : ""}`} onClick={() => setView("reservation")}><Icon name="doorOpen" /><span>특별실 예약</span></li>
+                <li className={`menu-item ${view === "events" ? "active" : ""}`} onClick={() => setView("events")}><Icon name="calendarRange" /><span>행사 일정 등록</span></li>
+                <li className={`menu-item ${view === "history" ? "active" : ""}`} onClick={() => setView("history")}><Icon name="history" /><span>변경 이력 & 복구</span></li>
+                <li className={`menu-item ${view === "stats" ? "active" : ""}`} onClick={() => setView("stats")}><Icon name="barChart3" /><span>시수 & 통계</span></li>
+                <li className={`menu-item ${view === "settings" ? "active" : ""}`} onClick={() => setView("settings")}><Icon name="settings" /><span>환경 설정</span></li>
+              </ul>
+              <div className="sidebar-footer">
+                <div className="user-profile">
+                  <div className="avatar">교</div>
+                  <div className="profile-info">
+                    <span className="profile-name">교무 부장</span>
+                    <span className="profile-role">최고 관리자</span>
+                  </div>
+                </div>
+                <button className="theme-toggle" onClick={toggleTheme}>
+                  <Icon name={theme === "dark" ? "sun" : "moon"} />
+                </button>
+              </div>
+            </aside>
+
+            <main className="main-content">
+              {view === "dashboard" && <Dashboard data={db} setView={setView} />}
+              {view === "viewer" && <TimetableViewer data={db} />}
+              {view === "upload" && <TimetableUpload data={db} updateData={updateData} />}
+              {view === "swap" && <SwapManager data={db} updateTableAndLogSwap={updateTableAndLogSwap} />}
+              {view === "substitute" && <SubstituteManager data={db} addSubstituteAssignment={addSubstituteAssignment} />}
+              {view === "reservation" && <RoomReservation data={db} addReservation={addReservation} />}
+              {view === "events" && <EventManager data={db} addEvent={addEvent} deleteEvent={deleteEvent} />}
+              {view === "history" && <AuditLog data={db} restoreSwap={restoreSwap} restoreSubstitute={restoreSubstitute} />}
+              {view === "stats" && <StatsDashboard data={db} />}
+              {view === "settings" && <Settings settings={db.settings} saveSettings={saveSettings} resetDatabase={resetDatabase} theme={theme} toggleTheme={toggleTheme} />}
+            </main>
+          </div>
+        );
+      }
+
+      // Render React App to DOM
+      const root = ReactDOM.createRoot(document.getElementById("root"));
+      root.render(<App />);
+    </script>
   </body>
 </html>
