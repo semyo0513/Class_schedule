@@ -875,10 +875,10 @@
       // ==========================================
       // Login & Registration Overlay View
       // ==========================================
-      function LoginView({ onLoginSuccess }) {
+      function LoginView({ onLoginSuccess, db, syncTable }) {
         const [mode, setMode] = useState("login");
-        const [schools, setSchools] = useState(getLocal("schools", DEFAULT_SCHOOLS));
-        const [users, setUsers] = useState(getLocal("users", DEFAULT_USERS));
+        const schools = db.schools || DEFAULT_SCHOOLS;
+        const users = db.users || DEFAULT_USERS;
 
         const [selectedSchoolId, setSelectedSchoolId] = useState(schools[0]?.id || "");
         const [role, setRole] = useState("teacher");
@@ -929,7 +929,7 @@
           }
         };
 
-        const handleSignup = (e) => {
+        const handleSignup = async (e) => {
           e.preventDefault();
           const targetSchool = schools.find(s => s.id === selectedSchoolId);
           if (!targetSchool) return;
@@ -953,8 +953,7 @@
           };
 
           const updatedUsers = [...users, newUser];
-          setUsers(updatedUsers);
-          setLocal("users", updatedUsers);
+          await syncTable("users", updatedUsers);
 
           alert("교사 회원가입이 완료되었습니다!");
           onLoginSuccess({
@@ -963,7 +962,7 @@
           });
         };
 
-        const handleSchoolRegister = (e) => {
+        const handleSchoolRegister = async (e) => {
           e.preventDefault();
           if (!newSchoolName.trim() || !newSchoolCode.trim() || !newAdminPassword.trim()) return;
 
@@ -976,8 +975,7 @@
           };
 
           const updatedSchools = [...schools, newSchool];
-          setSchools(updatedSchools);
-          setLocal("schools", updatedSchools);
+          await syncTable("schools", updatedSchools);
           setSelectedSchoolId(newSchoolId);
 
           alert("신규 학교가 정상 등록되었습니다. 해당 학교 정보로 로그인을 진행해 주세요.");
@@ -2997,7 +2995,7 @@
         }
 
         if (!currentUser) {
-          return <LoginView onLoginSuccess={setCurrentUser} />;
+          return <LoginView onLoginSuccess={setCurrentUser} db={db} syncTable={syncTable} />;
         }
 
         const schoolName = currentUser.schoolName || "학교";
